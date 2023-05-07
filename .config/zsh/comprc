@@ -1,0 +1,78 @@
+# Completion
+_cheat() { # cheat.sh command/bin autocomplete "tab"
+    _arguments "1: :($(for dir in $(echo "$PATH" | tr ':' ' '); do \ls $dir; done))"
+}
+compdef _cheat cheat
+_conf() { # conf autocomplete in .config dir
+    local curcontext="$curcontext" state line
+    _path_files -/ -W "$HOME/.config/" && return
+    return 1
+}
+compdef _conf conf
+_pacman-log() { # Autocompletion for pacman-log command
+  local -a options
+  options=(
+    '-h'
+    '-m'
+    '-i'
+    '-r'
+    '-ri'
+    '-rm'
+    '-mi'
+    '-rim'
+  )
+  _arguments -C \
+    '1: :->cmd' \
+    '2: :->files'
+  case $state in
+    (cmd)
+      _describe "command" options
+      ;;
+    (files)
+      _files
+      ;;
+  esac
+}
+compdef _pacman-log pacman-log
+_pacman-list() { # Autocompletion for pacman-list command
+  local -a options
+  options=(
+    '-h'
+    '-a'
+    '-p'
+    '-ap'
+  )
+  _arguments -C \
+    '1: :->cmd' \
+    '2: :->files'
+  case $state in
+    (cmd)
+      _describe "command" options
+      ;;
+    (files)
+      _files
+      ;;
+  esac
+}
+compdef _pacman-list pacman-list
+_diskburn() { # Autocompletion for isoburn functions
+  _files -g "*.iso" -g "*.img"
+}
+compdef _diskburn diskburn
+_explain() { # Autocompletion for explain functions
+    local all_commands=()
+    if [[ -f "$HOME/.config/zsh/funcrc" ]]; then
+        local funcrc_functions=$(grep -E '^[[:alnum:]-]+\(\)' "$HOME/.config/zsh/funcrc" | sed 's/().*$//')
+        all_commands+=("${funcrc_functions[@]}")
+    fi
+    if [[ -f "$HOME/.config/zsh/aliasrc" ]]; then
+        local aliasrc_aliases=$(sed -n '5,13d; s/^  alias -\?g* \?\([^=]*\)=.*/\1/p' "$HOME/.config/zsh/aliasrc")
+        all_commands+=("${aliasrc_aliases[@]}")
+    fi
+    if [[ -d "$HOME/.local/share/bin" ]]; then
+        all_commands+=($(find "$HOME/.local/share/bin" -maxdepth 1 -type f -exec basename {} \;&&find "$HOME/Private/.local/bin" -maxdepth 1 -type f -exec basename {} \;))
+    fi
+    all_commands=($(echo "${all_commands[@]}" | sort -u))
+    _arguments "1: :(${all_commands[*]})"
+}
+compdef _explain explain

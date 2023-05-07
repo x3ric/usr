@@ -1,0 +1,23 @@
+#!/bin/bash
+# Autostarted process
+function run {
+  if ! pgrep $1 > /dev/null 2>&1 ;
+  then
+    $@ > /dev/null 2>&1 &
+  fi
+}
+
+run mpd
+run aria2c
+run nm-applet
+run xfce4-clipman
+run blueman-applet
+run libinput-gestures-setup start
+$HOME/.local/share/bin/mpDris2 > /dev/null 2>&1 &
+sleep 5 && zsh -ci "archx updates" > /dev/null 2>&1 &
+$HOME/.local/share/bin/globalhud/appmenu.py > /dev/null 2>&1 &
+run picom -b --config  $HOME/.config/picom/picom.conf
+run /usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1
+echo 'local widget = require("lib.widgets.bar"); widget.updates:update(true)' | awesome-client > /dev/null 2>&1 &
+command -v input-remapper-control && input-remapper-control --command autoload &
+wal -i $(awk -F '"' '/self\.wallpaper/ { print $2 }' "$HOME/.config/awesome/themes/$(awk -F '"' '/ theme =/ {print $2}' ~/.config/awesome/rc.lua)/theme.lua") > /dev/null 2>&1 &

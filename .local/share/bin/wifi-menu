@@ -1,0 +1,28 @@
+#!/bin/bash
+# nmcli wifi menu
+if [[ $EUID -ne 0 ]]; then
+    echo "This script requires root privileges. Please run it with sudo."
+    exit 1
+fi
+echo "Getting list of available Wi-Fi networks..."
+wifi_list=($(nmcli --fields "SSID" device wifi list | awk 'NR>1{print $1}'))
+nmcli device wifi list
+read -p "Enter the network number to connect (0 to exit): " choice
+if [[ $choice != "0" && $choice -le ${#wifi_list[@]} ]]; then
+    index=$((choice-1))
+    chosen_id=${wifi_list[index]}
+    success_message="You are now connected to the Wi-Fi network \"$chosen_id\"."
+    saved_connections=$(nmcli -g NAME connection)
+    if [[ $saved_connections =~ (^|[[:space:]])"$chosen_id"($|[[:space:]]) ]]; then
+        nmcli connection up id "$chosen_id" | grep -q "successfully" && echo -e "Connection Established\n$success_message"
+    else
+        security=$(nmcli --fields "SECURITY" device wifi list | awk -v idx="$index" 'NR==idx+2 {print $1}')
+        if [[ $security =~ "WPA" ]]; then
+            read -s -p "Password: " wifi_password
+            echo
+        fi
+        sleep 3
+        nmcli device wifi connect "$chosen_id" password "$wifi_password" | grep -q "successfully" && echo -e "Connection Established\n$success_message"
+    fi
+    nmcli device status
+fi

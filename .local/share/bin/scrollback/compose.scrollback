@@ -1,0 +1,12 @@
+# copy to /usr/share/kbd/keymaps/include/compose.scrollback
+#
+# include it from /etc/vconsole.conf, for example:
+# KEYMAP_TOGGLE=compose.all
+# and /usr/share/kbd/keymaps/include/compose.all contains
+# include "compose.scrollback"
+#
+shift keycode 104 = F99
+shift keycode 109 = F100
+string F99 =  "\033[11~"
+string F100 = "\033[12~"
+

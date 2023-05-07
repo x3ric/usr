@@ -1,0 +1,38 @@
+#!/bin/python3
+# Screen text recognition wayland
+import subprocess
+import sys
+import pytesseract
+from PIL import Image
+from datetime import datetime
+def capture_screen(output_dir):
+    try:
+        timestamp = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
+        output_file = f"{output_dir}/screentext_{timestamp}.png"
+        subprocess.run(["grimblast", "save", "area", output_file], check=True)
+        return output_file
+    except subprocess.CalledProcessError as e:
+        print(f"An error occurred while capturing the screen: {str(e)}", file=sys.stderr)
+        return None
+def ocr_and_copy_to_clipboard(image_path):
+    try:
+        img = Image.open(image_path)
+        text = pytesseract.image_to_string(img)
+        subprocess.run(["wl-copy"], input=text.encode('utf-8'), check=True)
+    except Exception as e:
+        print(f"An error occurred: {e}", file=sys.stderr)
+def show_notification(message):
+    try:
+        subprocess.run(["notify-send", "OCR Process", message])
+    except Exception as e:
+        print(f"An error occurred while showing the notification: {e}", file=sys.stderr)
+def main():
+    output_dir = "/tmp"
+    image_path = capture_screen(output_dir)
+    if image_path:
+        ocr_and_copy_to_clipboard(image_path)
+        show_notification("Text copied to clipboard")
+    else:
+        show_notification("Failed to capture screen")
+if __name__ == "__main__":
+    main()

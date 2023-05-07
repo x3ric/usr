@@ -1,0 +1,50 @@
+#!/bin/bash
+# .Desktop Programs Hider
+files_to_hide=(
+  "/usr/share/applications/xdvi.desktop"
+  "/usr/share/applications/nvim.desktop"
+  "/usr/share/applications/btop.desktop"
+  "/usr/share/applications/uxterm.desktop"
+  "/usr/share/applications/xterm.desktop"
+  "/usr/share/applications/lstopo.desktop"
+  "/usr/share/applications/cmake-gui.desktop"
+  "/usr/share/applications/lf.desktop"
+  "/usr/share/applications/panel-preferences.desktop"
+  "/usr/share/applications/rofi.desktop"
+  "/usr/share/applications/rofi-theme-selector.desktop"
+  "/usr/share/applications/xfce4-about.desktop"
+  "/usr/share/applications/htop.desktop"
+  "/usr/share/applications/avahi-discover.desktop"
+  "/usr/share/applications/electron27.desktop"
+  "/usr/share/applications/electron28.desktop"
+  "/usr/share/applications/xfce4-clipman.desktop"
+)
+state="true"
+[[ ! -z $1 ]] && state="false"
+for file in "${files_to_hide[@]}"; do
+   if [ -f "$file" ]; then
+      if grep -q "^NoDisplay=" "$file"; then
+         sudo sed -i 's/^NoDisplay=.*$/NoDisplay='$state'/' "$file"
+      else
+         echo "NoDisplay=$state" | sudo tee -a "$file" &>/dev/null
+      fi
+   fi
+done
+# Pacman Hook to persist after updates
+if [[ ! -z "/etc/pacman.d/hooks" ]] ; then 
+   sudo mkdir -p /etc/pacman.d/hooks
+else
+   if [[ ! -z "/etc/pacman.d/hooks/99-desktop-hide.hook" ]] ; then
+sudo tee /etc/pacman.d/hooks/ > /dev/null <<EOF
+[Trigger]
+Operation = Upgrade
+Type = Package
+Target = *
+
+[Action]
+Description = Hide specific .desktop files
+When = PostTransaction
+Exec = /bin/bash -c '$HOME/.local/share/bin/desktop-hide'
+EOF
+   fi
+fi

@@ -1,0 +1,51 @@
+set icons true
+set shell zsh
+set shellopts '-ci'
+set previewer ctpv
+set cleaner ctpvclear
+cmd drag %dragon-drop -a -x $fx
+cmd drag-stay %dragon-drop -a $fx
+cmd drag-individual %dragon-drop $fx
+cmd finder ${{
+  f=$(mktemp)
+  res="$(broot --outcmd $f && bat $f | sed 's/cd //')"
+  rm -f "$f"
+  if [ -f "$res" ]; then
+    cmd="select"
+  elif [ -d "$res" ]; then
+    cmd="cd"
+  fi
+  lf -remote "send $id $cmd \"$res\""
+}}
+cmd bookmarks ${{
+  CacheFile="${XDG_CACHE_HOME:-$HOME/.cache}/bookmarks.cache"
+  current_user=$(whoami)
+  sed -i "s|\$HOME|/home/$(whoami)|g" "$CacheFile"
+  selected=$(cat "$CacheFile" | sed "s|^$HOME|/home/$current_user|g" | fzf-splitted )
+  if [ -n "$selected" ]; then
+    if [ -d "$selected" ]; then
+      lf "$selected" || exit 1
+    else
+      xdg-open "$selected"
+    fi
+  fi
+}}
+cmd delete ${{ 
+	printf "delete %s? [y/N] " "$fx"
+	read ans
+	[ $ans = "y" ] && rm -rf $fx
+}}
+cmd play ${{
+  file="$fx"
+  if [[ "$file" =~ \.(mp3|wav|flac|ogg|aac)$ ]]; then
+    mpg123 "$file"
+  fi
+}}
+# Bindings
+map <c-space> play
+map <c-d> delete
+map <c-f> $lf -remote "send $id select '$(fzf)'"
+map <c-b> : bookmarks
+map <tab> :  finder
+map <enter> :  quit
+map . set hidden!

@@ -1,0 +1,177 @@
+#!/bin/bash
+# Linux From Scratch in a WM
+# Deps
+function check_install_dependency() {
+    local dependency=$1
+    local install_command=$2
+    if ! pacman -Q $dependency &> /dev/null; then
+        echo "$dependency could not be found, installing it."
+        eval $install_command
+    fi
+}
+check_install_dependency "xmlto" "sudo pacman -Sy --needed --noconfirm xmlto"
+check_install_dependency "kmod" "sudo pacman -Sy --needed --noconfirm kmod"
+check_install_dependency "bc" "sudo pacman -Sy --needed --noconfirm bc"
+check_install_dependency "inetutils" "sudo pacman -Sy --needed --noconfirm inetutils"
+check_install_dependency "libelf" "sudo pacman -Sy --needed --noconfirm libelf"
+check_install_dependency "cpio" "sudo pacman -Sy --needed --noconfirm cpio"
+check_install_dependency "git" "sudo pacman -Sy --needed --noconfirm git"
+check_install_dependency "qemu" "sudo pacman -Sy --needed --noconfirm qemu-full"
+check_install_dependency "syslinux" "sudo pacman -Sy --needed --noconfirm syslinux"
+check_install_dependency "mtools" "sudo pacman -Sy --needed --noconfirm mtools"
+# Main Kernel download
+DIRLX="$HOME/.local/mklinux"
+function clone() {
+    mkdir "$DIRLX" 2> /dev/null
+    cd "$DIRLX"
+    if [[ ! -d "$DIRLX/linux" ]]; then
+        git clone --depth 1 https://github.com/torvalds/linux.git
+    else
+        cd "$DIRLX/linux"
+        git stash
+        git pull --rebase
+    fi
+    if [[ ! -d "$DIRLX/busybox" ]]; then
+        git clone --depth 1 https://git.busybox.net/busybox
+    else
+        cd "$DIRLX/busybox"
+        git stash
+        git pull --rebase
+    fi
+}
+function replacebuiltin() {
+    REBOOT='#!/bin/sh\necho 1 > /proc/sys/kernel/sysrq\necho b > /proc/sysrq-trigger\n'
+    sudo rm -rf "$DIRLX/bootloader/initramfs/sbin/reboot"
+    touch "$DIRLX/bootloader/initramfs/sbin/reboot"
+    sudo echo -e "$REBOOT" > "$DIRLX/bootloader/initramfs/sbin/reboot"
+    sudo chmod +x "$DIRLX/bootloader/initramfs/sbin/reboot"
+    POWEROFF='#!/bin/sh\necho 'o' > /proc/sysrq-trigger\n'
+    sudo rm -rf "$DIRLX/bootloader/initramfs/sbin/poweroff"
+    touch "$DIRLX/bootloader/initramfs/sbin/poweroff"
+    sudo echo -e "$POWEROFF" > "$DIRLX/bootloader/initramfs/sbin/poweroff"
+    sudo chmod +x "$DIRLX/bootloader/initramfs/sbin/poweroff"
+}
+
+function disk() {
+    if [[ ! -f "$DIRLX/bootloader/disk.img" ]]; then
+        cd "$DIRLX/bootloader/"
+        dd if=/dev/zero of=disk.img bs=1M count=1024
+        mkfs.ext4 disk.img
+    fi
+}
+function image() {
+    cd "$DIRLX/bootloader/initramfs/"
+    touch ./init 2> /dev/null
+    replacebuiltin
+    PROC='\nmount -t devtmpfs devtmpfs /dev\nmkdir /proc && mount -t proc proc /proc\ntouch "$(cttyhack)"\ntouch /dev/null\nmount /dev/sdb /root\nrm -rf /root/lost+found/\ntouch /root/.history\nexport HISTFILE=/root/.history'
+    WIFI='\nifconfig eth0 10.0.2.15 netmask 255.255.255.0 up && route add default gw 10.0.2.2 && mkdir etc && touch /etc/resolv.conf && echo -e "nameserver 8.8.8.8\nnameserver 8.8.4.4" > /etc/resolv.conf'
+    KEYMAP='\nloadkmap < /usr/share/key.bmap'
+    SHELL=''$KEYMAP$PROC$WIFI'\ncd root\nwhile true; do\n setsid cttyhack sh\n /bin/sh +m\ndone'
+    echo -e "init file\n"
+    echo -e '#!/bin/sh\n'$SHELL'' | sudo tee ./init
+    sudo chmod +x "$DIRLX/bootloader/initramfs/init" 2> /dev/null
+    sudo rm ./linuxrc 2> /dev/null
+    find . -print0 | cpio --null -ov --format=newc | gzip > "$DIRLX/bootloader/init.cpio" 2> /dev/null
+    cd "$DIRLX/bootloader/"
+    sudo dd if=/dev/zero of=boot bs=1M count=50
+    sudo mkfs -t fat ./boot    
+    sudo syslinux ./boot
+    sudo mkdir ./mount 2> /dev/null
+    sudo mount ./boot ./mount
+    sudo cp ./bzImage ./init.cpio ./mount
+    echo -e "Syslinux config:"
+    echo -e 'DEFAULT linux\n LABEL linux\n SAY Now booting the kernel lfs ...\n KERNEL /bzImage\n APPEND splash quiet loglevel=3 initrd=/init.cpio' | sudo tee "$DIRLX/bootloader/mount/syslinux.cfg" 2> /dev/null
+    sudo umount ./mount
+    disk
+}
+function install() {
+    echo "System Linux building"
+    cd "$DIRLX/linux"
+    rm -rf .config
+    cp $HOME/.cache/mklinuc/.config ./.config
+    make mrproper
+    if [[ ! -f "$DIRLX/linux/.config" ]]; then
+        make defconfig
+    fi
+    if [[ "$1" == "-m" ]]; then
+        make nconfig
+    fi
+    make -j "$(nproc)"
+    mkdir "$DIRLX/bootloader" 2> /dev/null
+    cp ./arch/x86/boot/bzImage "$DIRLX/bootloader"
+    cd "$DIRLX/busybox"
+    if [[ "$1" == "-m" ]]; then
+        make nconfig
+        sed -i 's/# CONFIG_STATIC is not set/CONFIG_STATIC=y/' "$DIRLX/busybox/.config"
+    elif [[ ! -f "$DIRLX/busybox/.config" ]]; then
+        make defconfig
+        sed -i 's/# CONFIG_STATIC is not set/CONFIG_STATIC=y/' "$DIRLX/busybox/.config"
+    fi
+    make -j "$(nproc)"
+    mkdir "$DIRLX/bootloader/initramfs" 2> /dev/null
+    make CONFIG_PREFIX="$DIRLX/bootloader/initramfs" install
+    mkdir -p "$DIRLX"/bootloader/initramfs/usr/share
+    cd "$DIRLX"/bootloader/initramfs/usr/share
+    loadkeys -b /usr/share/kbd/keymaps/i386/qwerty/$(setxkbmap -query | awk '/layout:/ {print $2}').map.gz > key.bmap
+    cd "$DIRLX/bootloader/initramfs/"
+    # imported bins
+        cd "$DIRLX/bootloader/initramfs/usr/bin"
+        # Iw for connection on physical hardware
+            #cd "$DIRLX/"
+            #git clone https://github.com/drygdryg/wifi_tools_static.git
+            #cd ./wifi_tools_static
+            #make iw
+            #cp ./binaries/iw $DIRLX/bootloader/initramfs/usr/bin/iw
+            #cd ..
+            #sudo rm .install
+            #sudo chmod +x $DIRLX/bootloader/initramfs/usr/bin/iw
+    image
+}
+function reimage() {
+    image
+    disk
+}
+function run() {
+    if [[ ! -d "$DIRLX/bootloader" ]]; then
+        install
+    else
+        if [[ $1 == "-ri" ]] ; then
+            reimage
+        else
+            image
+        fi
+    fi
+    echo "System Linux running"
+    cd "$DIRLX/bootloader/"
+    sudo chmod a+xwr boot
+    qemu-system-x86_64 -drive format=raw,file="$DIRLX/bootloader/boot" -drive format=raw,file="$DIRLX/bootloader/disk.img" -vga std -full-screen -net user -net nic -device virtio-keyboard -device virtio-mouse 2> /dev/null
+}
+if [[ $1 == "-c" ]]; then
+    sudo rm -rf "$DIRLX/bootloader"
+    exit 0
+elif [[ $1 == "-r" ]]; then
+    sudo rm -rf "$DIRLX"
+    exit 0
+elif [[ $1 == "-u" ]]; then
+    sudo rm -rf "$DIRLX/bootloader"
+    clone
+    run
+elif [[ $1 == "-m" ]]; then
+    sudo rm -rf "$DIRLX/bootloader"
+    clone
+    install -m
+    run
+elif [[ $1 == "-b" ]]; then
+    sudo rm -rf "$DIRLX/bootloader"
+    clone
+    install
+    run
+elif [[ $1 == "--help" || "$1" == "-h" ]]; then
+    echo -e "Linux From Scratch\n -c = clean previous build\n -ri = reimage\n -r = remove all\n -u = upgrade repos\n -m = nconfig\n -b = clean and build"
+    exit 0
+elif [[ -d "$DIRLX" ]]; then
+    run
+else
+    clone
+    run
+fi

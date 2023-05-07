@@ -1,0 +1,15 @@
+#!/bin/bash
+# Simple X11 Auto clicker
+if ! pacman -Q xdotool &> /dev/null; then
+    sudo pacman -Sy --needed --noconfirm xdotool
+fi
+if [[ -z $1 ]];then 
+    RATE=10
+else
+    RATE=$1
+fi
+SLEEP_TIME=$(echo "scale=4; 1/$RATE" | bc)
+while true; do
+    xdotool click 1
+    sleep $SLEEP_TIME
+done

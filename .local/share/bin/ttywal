@@ -1,0 +1,55 @@
+#!/bin/bash
+# TTY terminal colors from pywall
+WAL_COLORS="$HOME/.cache/wal/colors"
+if [ ! -f "$WAL_COLORS" ]; then
+  echo "Pywal colors file not found."
+  exit 1
+fi
+TEMP_COLORS="/tmp/ttywal"
+> "$TEMP_COLORS"
+while IFS= read -r line; do
+  if [[ $line =~ ^\#([A-Fa-f0-9]{6})$ ]]; then
+    echo "$line" >> "$TEMP_COLORS"
+  fi
+done < "$WAL_COLORS"
+if [ $(wc -l < "$TEMP_COLORS") -ne 16 ]; then
+  echo "Invalid number of color definitions found."
+  exit 1
+fi
+if [[ -f "/usr/local/bin/ttywal-server" ]]; then
+  echo "$TEMP_COLORS" > "$HOME/.cache/ttywal"
+else
+  if [[ -d "$HOME/.local/share/bin/ttywal-server" ]]; then
+    cd "$HOME/.local/share/bin/ttywal-server"
+    make install
+    sleep 3
+    echo "$TEMP_COLORS" > "$HOME/.cache/ttywal"
+  else
+    sudo setvtrgb "$TEMP_COLORS"
+  fi
+fi
+if ! grep -q '^HOOKS=.*\bcolors\b' /etc/mkinitcpio.conf; then
+    sudo sed -i '/^HOOKS=/ s/\(udev \)/\1colors /' /etc/mkinitcpio.conf
+    yay -S --noconfirm mkinitcpio-colors-git
+    echo "Custom hook for color added to initramfs configuration."
+else
+  if [ -f "/etc/vconsole.conf" ]; then
+    line_number=0
+    > /etc/vconsole.conf
+    while IFS= read -r line; do
+        color=$(echo "$line" | sed "s/^\(.*\)#\(.\{6\}\).*$/\2/")
+        eval "COLOR_$line_number=\"$color\""
+        ((line_number++))
+    done < /tmp/ttywal
+    for ((i=0; i<line_number; i++)); do
+        eval "echo \"COLOR_$i=\$COLOR_$i\""
+    done > /etc/vconsole.conf
+  fi
+  if [[ $1 != "-f" ]]; then
+    zsh -ci "ttyfont \$TTYFONT" > /dev/null 2>&1
+  fi
+  if [ -z $1 ]; then
+    sudo mkinitcpio -p linux
+  fi
+  #echo "TTY colors set from Pywal."
+fi

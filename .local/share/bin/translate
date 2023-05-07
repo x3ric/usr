@@ -1,0 +1,34 @@
+#!/usr/bin/env python3
+# Translate a string to a specified language without using external APIs.
+import os
+import sys
+import re
+import requests
+from bs4 import BeautifulSoup
+def translate(text, source_language, target_language):
+    try:
+        url = f"https://translate.google.com/m?sl={source_language}&tl={target_language}&q={text}"
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36"
+        }
+        response = requests.get(url, headers=headers)
+        soup = BeautifulSoup(response.text, "html.parser")
+        translation = soup.find("div", {"class": "result-container"}).text.strip()
+        return translation
+    except Exception as e:
+        return f"Translation failed: {str(e)}"
+def main():
+    if len(sys.argv) < 3:
+        print("Usage: translate <from_lang>:<to_lang> <text to translate>")
+        sys.exit(1)
+    lang_args = sys.argv[1].split(":")
+    source_language = lang_args[0]
+    target_language = lang_args[1]
+    text_to_translate = " ".join(sys.argv[2:])
+    if not text_to_translate:
+        print("No text to translate.")
+        sys.exit(1)
+    translation = translate(text_to_translate, source_language, target_language)
+    print(f"Translated from {source_language} to {target_language}: {translation}")
+if __name__ == "__main__":
+    main()

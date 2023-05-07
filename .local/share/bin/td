@@ -1,0 +1,80 @@
+#!/bin/bash
+# Simple Todo.md manager
+if ! pacman -Q fzf &> /dev/null; then
+    sudo pacman -S --needed --noconfirm fzf
+fi
+set -o posix
+alias fzf-tmux='fzf-tmux --color=16'
+TODODIR=${TODONE_DIR:-"$HOME/.cache/todo"}
+mkdir -p "$TODODIR"
+help() {
+  cat <<-EOF
+  ToDo!
+  A basic todo list with fzf integration.
+  Options:
+    -a, --add                    Add a todo
+    -d, --delete                 Delete a todo
+    -l, --list                   List todos
+    -o, --open                   Open a todo
+    -c, --clear                  Clear all todos
+    -h, --help                   Show this help message
+EOF
+}
+add() {
+  local NAME
+  NAME=$(echo | fzf-tmux --print-query --prompt="Enter Todo Name: ")
+  [ -z "$NAME" ] && { echo "Todo name cannot be empty"; return 1; }
+  local FILEPATH="$TODODIR/$NAME.md"
+  if [ -f "$FILEPATH" ]; then
+    echo "'$NAME' is already a todo"
+    return 1
+  fi
+  echo "# $NAME\n\n" > "$FILEPATH"
+  echo "'$NAME' todo added"
+}
+delete() {
+  local NAME
+  NAME=$(ls "$TODODIR"/*.md | awk -F '/' '{print $NF}' | awk -F '.md' '{print $1}' | fzf-tmux --height 40% --reverse --prompt="Select Todo to Delete: ")
+  [ -z "$NAME" ] && { echo "No todo selected"; return 1; }
+  local FILEPATH="$TODODIR/$NAME.md"
+  [ ! -f "$FILEPATH" ] && { echo "'$NAME' isn't a todo"; return 1; }
+  rm "$FILEPATH"
+  echo "'$NAME' todo deleted"
+}
+open() {
+  local NAME
+  NAME=$(ls "$TODODIR"/*.md | awk -F '/' '{print $NF}' | awk -F '.md' '{print $1}' | fzf-tmux --height 40% --reverse --prompt="Select Todo to Open: " --preview-window=down:80%:wrap --preview='cat '"$TODODIR"'/{1}.md' )
+  [ -z "$NAME" ] && { echo "No todo selected"; return 1; }
+  local FILEPATH="$TODODIR/$NAME.md"
+  [ ! -f "$FILEPATH" ] && { echo "'$NAME' isn't a todo"; return 1; }
+  ${EDITOR:-less} "$FILEPATH"
+}
+clear_todos() {
+  read -r -p "Are you sure? [y/N] " response
+  case $response in
+    [yY][eE][sS]|[yY])
+      rm "$TODODIR"/*.md
+      echo "Cleared todos"
+      ;;
+    *)
+      echo "Clear cancelled"
+      ;;
+  esac
+}
+list() {
+  local SELECTION
+  SELECTION=$(echo -e "Add Todo\nOpen Todo\nDelete Todo\n" | fzf-tmux --height 40% --reverse --prompt="Your Todos: " )
+  local KEY=$(echo "$SELECTION" | head -1)
+  local TODO=$(echo "$SELECTION" | tail -1)
+  case "$KEY" in
+    "Add Todo") add ;;
+    "Open Todo") open ;;
+    "Delete Todo") delete ;;
+    *)
+      if [ -n "$TODO" ] && [ "$TODO" != "Add Todo" ] && [ "$TODO" != "Delete Todo" ]; then
+        open "$TODO"
+      fi
+      ;;
+  esac
+}
+list

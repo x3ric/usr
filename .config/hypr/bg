@@ -1,0 +1,3 @@
+#!/bin/bash
+wal=$(cat $HOME/.cache/wal/wal | sed 's|$HOME|'"$HOME"'|')
+swaybg -i "$wal" -m fill

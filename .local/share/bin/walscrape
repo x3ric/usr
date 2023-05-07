@@ -1,0 +1,106 @@
+#!/bin/zsh -i
+# Wallpaper scraper from wallhaven
+display_help() {
+cat <<EOF
+Usage: walscrape [options] search_query
+
+Options:
+  -categories=N           Set the category (e.g., -categories 100)
+  -purity=N               Set the purity (e.g., -purity 111)
+  -sorting=type           Set the sorting type (e.g., -sorting date_added, relevance, random, views, favorites, toplist)
+  -order=type             Set the sorting order (e.g., -order desc, asc)
+  -topRange=type          Set the top range (e.g., -topRange 1d, 3d, 1w, 1M, 3M, 6M, 1y)
+  -resolution=res         Set the resolution (e.g., -resolution 1920x1080,1920x1200)
+  -ratios=ratio           Set the ratios (e.g., -ratios 16x9,16x10)
+  -colors=colors          Set the colors (e.g., -colors 660000,990000)
+  -page=page_num          Set the starting page number (e.g., -page 1)
+
+Search options:
+  tagname                Search fuzzily for a tag or keyword
+  -tagname               Exclude a tag or keyword
+  +tag1 +tag2            Must have both tag1 and tag2
+  +tag1 -tag2            Must have tag1 and NOT tag2
+  @username              Show user uploads
+  id:123                 Exact tag search (cannot be combined)
+  type:{png/jpg}         Search for a specific file type (e.g., -q mysearch -type:jpg)
+  like:wallpaper ID      Find wallpapers with similar tags
+
+Categories:
+  100                    General
+  101                    Anime
+  111                    People
+
+Purity options:
+  100                    SFW (Safe For Work)
+  110                    Sketchy
+  111                    NSFW (Not Safe For Work, requires a valid API key)
+
+Examples:
+  walscrape -categories 100 -purity 111 mysearch
+  walscrape -sorting relevance -order desc -resolution 1920x1080,1920x1200 landscape
+
+Additional Information:
+  - The search query should be provided as the last argument.
+  - Use 'walscrape -h' to display this help message.
+EOF
+}
+if [ $# -eq 0 ]; then
+    display_help
+    return 1
+fi
+local base_url="https://wallhaven.cc/api/v1/search?"
+local downloaded_ids_file="$HOME/Pictures/Wallpapers/Wallhaven/downloaded_ids.txt"
+local download_dir="$HOME/Pictures/Wallpapers/Wallhaven"
+local search_query=""
+local categories=""
+local purity=""
+local sorting=""
+local order=""
+local topRange=""
+local resolution=""
+local ratios="landscape"
+local colors=""
+local page=1
+while [[ $# -gt 0 ]]; do
+    local arg="$1"
+    case $arg in
+        -categories|-purity|-sorting|-order|-topRange|-resolution|-ratios|-colors|-page)
+            local var_name="${arg//-/}"
+            local var_value="$2"
+            eval "$var_name=\"$var_value\""
+            shift 2
+            ;;
+        -h)
+            display_help
+            return 0
+            ;;
+        *)
+            if [ -z "$search_query" ]; then
+                search_query="$arg"
+            else
+                echo "Unknown argument: $arg"
+            fi
+            shift
+            ;;
+    esac
+done
+if [ -z "$search_query" ]; then
+    echo "Search query is required."
+    return 1
+fi
+local url="${base_url}q=${search_query}"
+if [ -n "$categories" ]; then url="${url}&categories=${categories}" fi
+if [ -n "$purity" ]; then url="${url}&purity=${purity}" fi
+if [ -n "$sorting" ]; then url="${url}&sorting=${sorting}" fi
+if [ -n "$order" ]; then url="${url}&order=${order}" fi
+if [ -n "$topRange" ]; then url="${url}&topRange=${topRange}" fi
+if [ -n "$resolution" ]; then url="${url}&resolutions=${resolution}" fi
+if [ -n "$ratios" ]; then url="${url}&ratios=${ratios}" fi
+if [ -n "$colors" ]; then url="${url}&colors=${colors}" fi
+local downloaded_ids=($(cat "$downloaded_ids_file" 2>/dev/null))
+echo "URL: $url"
+while [ $page -lt 10 ]; do
+    local page_url="${url}&page=${page}"
+    curl -s "$page_url" | jq '.data[].path' | xargs -I{} wget --show-progress -nc -nv -P "$download_dir" {}
+    page=$(( page+1 ));
+done

@@ -1,0 +1,3 @@
+#!/bin/bash
+# Rofi hud of globalhud alt+\
+$HOME/.local/share/bin/globalhud/command.py

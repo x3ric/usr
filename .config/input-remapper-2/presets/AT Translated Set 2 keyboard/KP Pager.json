@@ -1,0 +1,26 @@
+[
+    {
+        "input_combination": [
+            {
+                "type": 1,
+                "code": 73,
+                "origin_hash": "0df5be1d762f356bd1ae2648f339783d"
+            }
+        ],
+        "target_uinput": "keyboard",
+        "output_symbol": "Prior",
+        "mapping_type": "key_macro"
+    },
+    {
+        "input_combination": [
+            {
+                "type": 1,
+                "code": 81,
+                "origin_hash": "0df5be1d762f356bd1ae2648f339783d"
+            }
+        ],
+        "target_uinput": "keyboard",
+        "output_symbol": "Next",
+        "mapping_type": "key_macro"
+    }
+]

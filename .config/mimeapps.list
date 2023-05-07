@@ -1,0 +1,33 @@
+[Added Associations]
+image/png=gimp.desktop;feh.desktop;
+image/jpeg=gimp.desktop;feh.desktop;
+image/gif=gimp.desktop;feh.desktop;
+text/plain=nvim.desktop;
+text/html=firefox.desktop;
+video/mp4=mpv.desktop;
+audio/mpeg=mpv.desktop;
+audio/flac=mpv.desktop;
+application/x-executable=wine.desktop;
+application/zip=engrampa.desktop;
+application/xml=nvim.desktop;
+application/javascript=nvim.desktop;
+application/pdf=firefox.desktop;
+application/x-python-code=nvim.desktop;
+
+[Default Applications]
+text/plain=nvim.desktop;
+image/png=gimp.desktop;
+image/jpeg=gimp.desktop;
+image/gif=gimp.desktop;
+text/html=firefox.desktop;
+video/mp4=mpv.desktop;
+audio/mpeg=mpv.desktop;
+audio/flac=mpv.desktop;
+application/x-executable=wine.desktop;
+application/zip=engrampa.desktop;
+application/xml=nvim.desktop;
+application/javascript=nvim.desktop;
+application/pdf=firefox.desktop;
+application/x-python-code=nvim.desktop;
+
+[Removed Associations]

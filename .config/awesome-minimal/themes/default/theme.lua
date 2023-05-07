@@ -1,0 +1,61 @@
+local theme_assets = require("beautiful.theme_assets")
+local xresources = require("beautiful.xresources")
+local dpi = xresources.apply_dpi
+local gfs = require("gears.filesystem")
+local home = os.getenv("HOME")
+local xrdb = xresources.get_current_theme()
+local themes_path = home .. "/.config/awesome/themes"
+local theme = {}
+function theme:init()
+        self.path = themes_path .. "/" .. "default"
+        self.wallpaper = os.getenv("HOME") .. "/.config/awesome/themes/default/Default.jpg"
+        self.icon = {
+            volume         = self.path .. "/icons/volume/volume.png",
+            volumelow      = self.path .. "/icons/volume/volume-low.png",
+            volumeoff      = self.path .. "/icons/volume/volume-off.png",
+            brightness     = self.path .. "/icons/brightness/brightness.png",
+            brightnesslow  = self.path .. "/icons/brightness/brightness-low.png",
+            brightnessoff  = self.path .. "/icons/brightness/brightness-off.png",
+        }
+end
+theme:init()
+theme.font          = "Terminus 13"
+theme.hotkeys_font  = "Terminus 15"
+theme.hotkeys_description_font = "Terminus 13"
+theme.bg_normal     = "#000000"
+theme.bg_focus      = xrdb.color0
+theme.bg_urgent     = xrdb.color7
+theme.bg_minimize   = "#0F0F0F"
+theme.bg_systray    = theme.bg_normal
+theme.fg_normal     = "#F1F1F1"
+theme.hotkeys_modifiers_fg = xrdb.color7
+theme.hotkeys_fg   = xrdb.color7
+theme.fg_focus      = "#ffffff"
+theme.fg_urgent     = "#ffffff"
+theme.fg_minimize   = "#ffffff"
+theme.useless_gap   = dpi(0)
+theme.border_width  = dpi(0)
+theme.border_normal = "#000000"
+theme.border_focus  = "#F0F0F0"
+theme.border_marked = xrdb.color9
+local taglist_square_size = dpi(4)
+theme.taglist_squares_sel = theme_assets.taglist_squares_sel( taglist_square_size, theme.fg_normal )
+theme.taglist_squares_unsel = theme_assets.taglist_squares_unsel( taglist_square_size, theme.fg_normal )
+theme.layout_fairh = theme.path .. "/icons/layouts/fairhw.png"
+theme.layout_fairv = theme.path .. "/icons/layouts/fairvw.png"
+theme.layout_floating  = theme.path .. "/icons/layouts/floatingw.png"
+theme.layout_magnifier = theme.path .. "/icons/layouts/magnifierw.png"
+theme.layout_max = theme.path .. "/icons/layouts/maxw.png"
+theme.layout_fullscreen = theme.path .. "/icons/layouts/fullscreenw.png"
+theme.layout_tilebottom = theme.path .. "/icons/layouts/tilebottomw.png"
+theme.layout_tileleft   = theme.path .. "/icons/layouts/tileleftw.png"
+theme.layout_tile = theme.path .. "/icons/layouts/tilew.png"
+theme.layout_tiletop = theme.path .. "/icons/layouts/tiletopw.png"
+theme.layout_spiral  = theme.path .. "/icons/layouts/spiralw.png"
+theme.layout_dwindle = theme.path .. "/icons/layouts/dwindlew.png"
+theme.layout_cornernw = theme.path .. "/icons/layouts/cornernww.png"
+theme.layout_cornerne = theme.path .. "/icons/layouts/cornernew.png"
+theme.layout_cornersw = theme.path .. "/icons/layouts/cornersww.png"
+theme.layout_cornerse = theme.path .. "/icons/layouts/cornersew.png"
+theme.icon_theme = nil
+return theme

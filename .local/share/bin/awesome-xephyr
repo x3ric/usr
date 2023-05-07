@@ -1,0 +1,15 @@
+#!/bin/bash
+# Awesome Xephyr "Dev"
+if ! pacman -Q xorg-server-xephyr &> /dev/null; then
+    sudo pacman -Sy --needed --noconfirm xorg-server-xephyr
+fi
+if [[ -z $1 ]];then 
+    conf="awesome"
+else
+    conf=$1
+fi
+Xephyr :3 -ac -screen 1920x1080 &
+XEPHYR_PID=$!
+sleep 0.5
+DISPLAY=:3 awesome -c $HOME/.config/$conf/rc.lua
+kill ${XEPHYR_PID}

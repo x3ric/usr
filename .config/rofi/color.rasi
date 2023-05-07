@@ -1,0 +1,17 @@
+* {
+    red:                            #BF616A;
+    darkred:                        #BF616A;
+    green  :                        #A3BE8C;
+    darkgreen:                      #A3BE8C;
+    yellow:                         #EBCB8B;
+    darkyellow:                     #EBCB8B;
+    blue:                           #5E81AC;
+    darkblue:                       #5E81AC;
+    purple:                         #B48EAD;
+    darkpurple:                     #B48EAD;
+    cyan:                           #88C0D0;
+    darkcyan:                       #88C0D0;
+    foreground:                     #D8DEE9;
+    background:                     #010101;
+    border:                         #171717;
+}

@@ -1,0 +1,26 @@
+#!/bin/zsh
+# Url link handler
+if [ -z "$1" ]; then
+    url="$(xclip -o)"
+else
+    url="$1"
+fi
+case "$url" in
+    *mkv|*webm|*mp4|*youtube.com/watch*|*youtube.com/playlist*|*youtube.com/shorts*|*youtu.be*|*hooktube.com*|*bitchute.com*|*odysee.com*)
+        setsid -f mpv -quiet "$url" >/dev/null 2>&1 ;;
+    *png|*jpg|*jpe|*jpeg|*gif|*webp)
+        #echo "Downloading image from: $url"
+        tmp_file="/tmp/$(echo "$url" | sed "s/.*\///;s/%20/ /g")"
+        #echo "Temporary file: $tmp_file"
+        curl -sL "$url" -o "$tmp_file" >/dev/null 2>&1
+        if [ $? -eq 0 ]; then
+            #echo "Image downloaded successfully."
+            #echo "Opening image with feh..."
+            feh "$tmp_file"
+        else
+            #echo "Failed to download image."
+        fi
+        ;;
+    *)
+        setsid -f xdg-open "$url" >/dev/null 2>&1 ;;
+esac

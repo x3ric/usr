@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<actions>
+<action>
+	<icon>utilities-terminal</icon>
+	<name>Open Terminal Here</name>
+	<unique-id>1668548264601466-1</unique-id>
+	<command>kitty -d %f</command>
+	<description>Terminal</description>
+	<patterns>*</patterns>
+	<startup-notify/>
+	<directories/>
+</action>
+<action>
+	<icon>cryptfolder-open-light</icon>
+	<name>Open thunar as root</name>
+	<unique-id>1669509341701954-2</unique-id>
+	<command>thunar admin:%f</command>
+	<description>Thunar root</description>
+	<patterns>*</patterns>
+	<directories/>
+</action>
+</actions>

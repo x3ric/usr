@@ -1,0 +1,78 @@
+@theme "~/.config/rofi/color.rasi"
+
+* {
+    font:                           "JetBrainsMonoMedium Nerd Font 10";
+    background-color: transparent;
+    text-color:       @foreground;
+    padding:          0px;
+    margin:           0px;
+    width: 			  40%;
+    height: 		  50%;
+}
+
+
+window {
+  fullscreen: false;
+  padding: 1em;
+  background-color: rgba(0, 0, 0, 0.7);
+}
+
+mainbox {
+  padding:  0px;
+}
+
+prompt { enabled: false; }
+
+textbox-prompt-colon {
+	expand: 						false;
+	str: 							"";
+    padding:                        10px 0px 0px 12px;
+	font:							"Material Icons Round 16";
+}
+
+entry {
+    placeholder-color:              @foreground;
+    expand:                         true;
+    placeholder:                    "Type here to search";
+    blink:                          true;
+    padding:           10px 0px 0px 50px;
+}
+
+inputbar {
+	children: 						[ prompt, entry ,textbox-prompt-colon ];
+    background-color: @background;
+    spacing:                        0px;
+    expand:                         false;
+    border-radius:                  8px;
+    position:                       center;
+}
+
+listview {
+  columns:      1;
+  lines:	      4;
+  cycle:        true;
+  dynamic:      true;
+  layout:       vertical;
+}
+
+element, element-text, element-icon {
+  cursor: pointer;
+}
+
+element {
+  padding:        10px;
+  spacing:        2px;
+  orientation:    vertical;
+  border-radius:  4px;
+}
+
+element selected {
+  background-color: @border;
+}
+
+element-icon {
+}
+
+element-text {
+
+}

@@ -1,0 +1,32 @@
+{
+    "no_systray": false,
+    "timeout": 1.0,
+    "recent_thr": 0.1,
+    "compr_cnt": 3,
+    "ignore": [],
+    "position": "fixed",
+    "persist": false,
+    "window": null,
+    "font_desc": "MesloLGS NF 10",
+    "font_size": "large",
+    "font_color": "white",
+    "bg_color": "black",
+    "opacity": 0.3,
+    "key_mode": "composed",
+    "bak_mode": "baked",
+    "mods_mode": "tux",
+    "mods_only": true,
+    "multiline": false,
+    "vis_shift": false,
+    "vis_space": false,
+    "geometry": [
+        1745,
+        952,
+        174,
+        55
+    ],
+    "screen": 0,
+    "start_disabled": false,
+    "mouse": false,
+    "button_hide_duration": 1
+}

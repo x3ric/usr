@@ -1,0 +1,10 @@
+{
+    "minimizeToTray": "on",
+    "discordBranch": "stable",
+    "arRPC": false,
+    "openLinksWithElectron": true,
+    "hardwareAcceleration": true,
+    "splashColor": "oklab(0.899401 -0.00192499 -0.00481987)",
+    "splashBackground": "rgba(8, 8, 8, 0.5)",
+    "disableMinSize": true
+}

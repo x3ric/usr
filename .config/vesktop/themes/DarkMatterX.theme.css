@@ -1,0 +1,343 @@
+/**
+ * @name Dark Matter X Linux
+ * @author X3ric
+ * @version 3.0.0
+ * @description DarkTransparentX
+ * @source https://github.com/DiscordStyles/DarkMatter/
+*/
+
+@import url('https://mwittrien.github.io/BetterDiscordAddons/Themes/BlurpleRecolor/BlurpleRecolor.css');
+
+button {
+	--accentcolor: var(--accent-alt);
+}
+ 
+:root {
+    --font-primary: 'OCR A' ;
+	--font-display: var(--font-primary) !important;
+	/* Dark Matter Variables */
+    /*--avatar-size:        16px;*/
+	--background-color: rgba(8,8,8,0.95);
+    --background-image:  url('');
+    --home-image:  url('https://i.imgur.com/233d55Y.gif');
+    --background-solid:      rgba(8,8,8,0.5);
+    --background-solid-dark:      rgba(5,5,5,0.5);
+    --background-solid-darker:       rgba(3, 3, 3, 0.35);
+    --accent:  128,37,230;
+    --accent-alt:  87,29,133;
+    --black: 0, 0, 0 / 0.5;
+	--white: 255, 255, 255;
+	/* BlurpleRecolor */
+	--accentcolor: var(--accent);
+	--vaccentcolor-hover: rgba(var(--accent), 0.75);
+	--vaccentcolor-active: rgba(var(--accent), 0.75);
+}
+
+
+.focusLock-bHVOlV, .root-1CAIjD {
+    background-color: var(--background-solid) !important;
+	color: rgba(var(--white), 0.3) !important;
+}
+
+.theme-dark .footerSeparator-3U8YsT {
+	background-color: var(--background-solid) !important;
+	color: rgba(var(--white), 0.3) !important;}
+
+.theme-dark,
+.theme-light {
+	/* Discord vars */
+	--background-primary: var(--background-solid);
+	--background-mobile-primary: var(--background-primary);
+	--background-secondary: var(--background-solid);
+	--background-mobile-secondary: var(--background-secondary);
+	--background-secondary-alt: var(--background-solid);
+	--background-tertiary: var(--background-solid);
+	--background-floating: var(--background-solid);
+	--background-secondary: var(--background-solid);
+	--background-accent: var(--background-solid);
+	--background-message-hover: rgba(var(--black), 0.4);
+	--channeltextarea-background: transparent;
+	--activity-card-background: rgba(var(--white), 0.05);
+	--deprecated-store-bg: transparent;
+	--background-modifier-hover: rgba(var(--black), 0.3);
+	--background-modifier-active: rgba(var(--black), 0.3);
+	--background-modifier-selected: rgba(var(--black), 0.6);
+	--elevation-low: inset 0 -1px 0 0 rgba(var(--black), 0.3);
+	--channels-default: rgba(var(--white), 0.3);
+	--deprecated-quickswitcher-input-background: var(--background-solid);
+	--focus-primary: rgba(var(--accent), 0.75);
+}
+
+ ::selection {
+	background-color: rgba(var(--accent-alt), 0.5);
+}
+
+/* Guilds */
+
+
+ul[data-list-id='guildsnav'] ::-webkit-scrollbar {
+	display: none;
+}
+
+[data-list-id='guildsnav'] [class^="pill-"] span[style^="opacity: 1; height: 40"] {
+	--header-primary: rgba(var(--accent), 0.75);
+}
+
+span[class^="expandedFolderBackground-"] {
+	--background-secondary: rgba(var(--black), 0.25);
+}
+
+
+div[data-list-item-id="guildsnav___home"] {
+	background: var(--home-image) top center/110% no-repeat;
+}
+
+#app-mount [data-list-item-id="guildsnav___home"]>div {
+	color: transparent;
+	background-color: transparent;
+}
+
+div[data-list-item-id="guildsnav___create-join-button"],
+div[data-list-item-id="guildsnav___guild-discover-button"] {
+	background-color: var(--background-solid) !important;
+	color: rgba(var(--white), 0.3) !important;
+}
+
+div[data-list-item-id="guildsnav___create-join-button"]:hover,
+div[data-list-item-id="guildsnav___guild-discover-button"]:hover {
+	opacity: 1;
+}
+
+
+/* Sidebar */
+
+
+div[class^="sidebar-"] nav,
+#private-channels {
+	background-color: transparent;
+	--background-tertiary: rgba(var(--black), 0.35);
+}
+
+
+div[id^="members-"] {
+	--background-secondary: rgba(var(--black), 0.4);
+	--background-modifier-hover: rgba(var(--white), 0.07);
+	--background-modifier-active: var(--background-modifier-hover);
+	--background-modifier-selected: rgba(var(--white), 0.07);
+}
+
+div[id^="members-"]>div {
+	background-color: transparent;
+}
+
+div[id^="members-"] [class*="placeholder"] {
+	--backgorund-primary: var(--text-normal);
+}
+
+div[class^='nowPlayingColumn'] {
+	--background-secondary: transparent;
+	--background-primary: rgba(var(--black), 0.5);
+	--background-modifier-hover: rgba(var(--white), 0.075);
+}
+
+#channels div[class^="unread-"] {
+	--interactive-active: rgba(var(--accent), 0.75);
+}
+
+
+/* Sidebar Header */
+
+div[class*='clickable-'][aria-expanded]>header {
+	--background-accent: rgba(var(--accent), 0.15);
+	--background-modifier-hover: rgba(var(--black), 0.25);
+}
+
+/* Outer containers */
+
+#app-mount {
+	--background-tertiary: transparent;
+	--background-secondary: transparent;
+	background: var(--background-image) center/cover no-repeat;
+}
+
+#app-mount>div[class^="app-"] {
+	--background-tertiary: transparent;
+	--background-secondary: rgba(var(--black), 0.7);
+	background-color: rgba(var(--black), 0.4);
+}
+
+
+div[class^='base-']>div {
+	--background-secondary: rgba(var(--black), 0.7);
+	--background-tertiary: rgba(var(--white), 0.05);
+	--background-primary: rgba(var(--black), 0.8);
+}
+
+#app-mount>div:not([class^="app-"]),
+.autocomplete-1vrmpx {
+	--background-primary: var(--background-solid);
+	--background-secondary: var(--background-solid-dark);
+	--background-secondary-alt: var(--background-solid-darker);
+	--background-tertiary: var(--background-solid-darker);
+}
+
+
+
+/* Header */
+
+section[class*="themed-"] {
+	box-shadow: var(--elevation-low);
+	--background-secondary: rgba(var(--white), 0.1);
+}
+
+section>div>a[href="https:https://support.discord.com"] {
+	display: none;
+}
+
+section[class*="themed-"]::before,
+section[class*="themed-"] ::after {
+	content: none;
+}
+
+
+
+section div[class^="toolbar"]>div[role][class*="selected-"] {
+	background-color: rgba(var(--white), 0.1);
+}
+
+
+/* Panels */
+
+div[class^='sidebar-']>section {
+	--background-primary: rgba(var(--white), 0.07);
+	--background-secondary: rgba(var(--white), 0.1);
+	--background-secondary-alt: rgba(var(--black), 0.75);
+}
+
+div[class^='sidebar-']>section>div:last-child {
+	background-color: var(--background-secondary-alt);
+}
+
+
+/* Codeblocks */
+
+html pre {
+	background: transparent;
+}
+
+pre code.hljs {
+	background-color: rgba(var(--white), 0.1);
+	color: rgba(var(--white), 0.7);
+}
+
+html code.inline,
+html code.inline {
+	background: rgba(var(--white), 0.1);
+	color: rgba(var(--white), 0.7);
+}
+
+
+/* Settings */
+
+div[aria-label*="_SETTINGS"],
+div[aria-label*="_DEBUG"] {
+	--background-primary: transparent;
+	--background-secondary: rgba(var(--black), 0.7);
+}
+
+div[class^="sidebarRegionScroller-"]>nav {
+	--background-secondary: transparent;
+}
+
+div[class^="contentRegion-"] {
+	--background-primary: rgba(var(--black), 0.4);
+}
+
+div[class^="contentRegion-"] div[style^="overflow: hidden scroll"] {
+	background-color: transparent;
+	--background-primary: rgba(var(--black), 0.1);
+	--background-secondary: rgba(var(--black), 0.2);
+	--background-secondary-alt: rgba(var(--black), 0.25);
+	--background-tertiary: rgba(var(--white), 0.1);
+}
+
+div[aria-label*="_SETTINGS"] aside>div {
+	--background-primary: transparent;
+}
+
+div[aria-label*="_SETTINGS"] aside>div::-webkit-scrollbar-track {
+	visibility: hidden !important;
+}
+
+.bd-addon-list {
+	--background-secondary: var(--background-solid);
+	--background-secondary-alt: var(--background-solid-dark);
+}
+
+
+/* Tab Bar */
+
+div[class*="topPill"],
+nav>div[role="tablist"],
+.bd-tab-bar {
+	--background-accent: rgba(var(--accent));
+	--background-modifier-hover: rgba(var(--white), 0.05);
+	--background-modifier-active: rgba(var(--white), 0.075);
+	--background-modifier-selected: rgba(var(--accent), 0.25);
+}
+
+
+/* Server Discovery */
+
+div[class^="sidebar"]+[class^="pageWrapper"] {
+	--background-secondary: rgba(var(--black), 0.8);
+	background-color: var(--background-secondary);
+}
+
+
+/* Crash Page */
+
+div[class*="errorPage"] {
+	--background-secondary: rgba(var(--black), 0.7) !important;
+}
+
+
+/* Tooltips */
+
+div[class^="tooltip-"] {
+	--background-floating: rgba(var(--accent-alt), 0.75);
+	--text-normal: #e0e0e0;
+}
+
+
+/* Buttons */
+
+button[class*="button-"][class*="color"],
+.bd-button {
+	--vaccentcolor: var(--accent-alt);
+}
+
+.bd-button {
+	--bd-blue: rgba(var(--accent-alt), 0.75);
+}
+
+
+/* Context Menu */
+
+div[role="menuitem"] {
+	--vaccentcolor: var(--accent-alt);
+}
+
+div[role="menuitem"]:active {
+	--vaccentcolor: var(--accent);
+}
+
+/* Screen Share */
+
+.theme-dark {
+--modal-background: rgb(0 0 0 / 50%);
+}
+
+.footer__89240 {
+    background-color: rgb(0 0 0 / 35%);
+}

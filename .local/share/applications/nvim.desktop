@@ -1,0 +1,13 @@
+[Desktop Entry]
+Encoding=UTF-8
+Version=1.0
+Type=Application
+NoDisplay=false
+Exec=kitty --class nvim nvim %f
+Name=Neovim
+Categories=TextEditor;Development;IDE;
+Comment=Neovim in kitty.
+Icon=nvim
+Path=
+Terminal=false
+StartupNotify=false

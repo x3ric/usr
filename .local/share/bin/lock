@@ -1,0 +1,50 @@
+#!/bin/bash
+# Simple Lock sceen for hibernation/sleep
+lock="physlock"
+lockpath=$(which $lock)
+login_msg="Arch login: $USER"
+if [[ "$1" == "run" ]]; then
+    $lockpath -p "$login_msg"
+fi
+if ! pacman -Q $lock &> /dev/null; then
+    sudo pacman -Sy --needed --noconfirm $lock
+fi
+show_help() {
+    echo "Usage: lock [OPTIONS]"
+    echo "Options:"
+    echo "  --help          Show help"
+    echo "  -s              only suspend target"
+    echo "  -h              only hibernate target"
+}
+if [[ "$1" == "--help" ]]; then
+    show_help
+    exit 0
+else
+    while getopts ":sh" opt; do
+        case ${opt} in
+            s)
+                target="suspend.target"
+                ;;
+            h)
+                target="hibernate.target"
+                ;;
+            \?)
+                echo "Invalid option: -$OPTARG" >&2
+                show_help
+                exit 1
+                ;;
+        esac
+    done
+    if [ -z "$target" ]; then
+        target="suspend.target hibernate.target"
+    fi
+fi
+echo -e "[Unit]\nDescription=Lock screen before hibernating\nBefore=$target\n[Service]\nType=oneshot\nExecStart=$HOME/.local/share/bin/lock run\n[Install]\nWantedBy=$target\n" | sudo tee /etc/systemd/system/lock.service &> /dev/null
+if sudo systemctl is-enabled lock.service >/dev/null 2>&1; then
+    sudo systemctl disable lock.service
+    sudo rm -rf /etc/systemd/system/lock.service
+    echo "Disabled lock.service"
+else
+    sudo systemctl enable lock.service
+    echo "Enabled lock.service"
+fi

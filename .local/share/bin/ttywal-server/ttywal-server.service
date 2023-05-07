@@ -1,0 +1,11 @@
+[Unit]
+Description=Write Address Service
+
+[Service]
+ExecStart=/usr/local/bin/ttywal-server /home/e/
+User=root
+Group=root
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
