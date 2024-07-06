@@ -1,0 +1,11 @@
+#!/bin/env bash
+# Switch user only if autologin is disabled
+tty_number="1" 
+service_dir="/etc/systemd/system/getty@tty${tty_number}.service.d" 
+service_file="$service_dir/autologin.conf" 
+current_user=$(whoami) 
+if [[ -f "$service_file" ]]; then
+    notify-send "disable Auto-login for tty${tty_number} to continue"
+else
+    loginctl kill-session $XDG_SESSION_ID
+fi

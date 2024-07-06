@@ -1,8 +1,6 @@
 #!/bin/bash
 # Simple X11 Auto clicker
-if ! pacman -Q xdotool &> /dev/null; then
-    sudo pacman -Sy --needed --noconfirm xdotool
-fi
+need xdotool
 if [[ -z $1 ]];then 
     RATE=10
 else

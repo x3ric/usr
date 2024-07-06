@@ -1,0 +1,9 @@
+#!/bin/env bash
+# qr code link generator
+if [ -z "$1" ]; then 
+    echo "Usage: qrgen <text_or_url>" 
+    exit 1 
+fi  
+input="$1" 
+api_url="https://qrenco.de/$input"  
+curl -s $api_url || echo "Failed to generate QR Code."

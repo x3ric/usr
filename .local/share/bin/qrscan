@@ -1,0 +1,12 @@
+#!/bin/env bash
+# qr code scanner using zbar and scrot
+need zbar
+scrot -l  mode=edge,style=dash,width=1,opacity=100 -s $HOME/.cache/qr.png
+url=$(zbarimg --raw --quiet $HOME/.cache/qr.png)
+rm $HOME/.cache/qr.png
+if [ -n "$url" ]; then
+    echo -e "QR-Code ⤵\n$url"
+    xdg-open "$url" &>/dev/null
+else
+    echo "No QR code found"
+fi

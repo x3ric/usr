@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+# Run commands on file/dir size change
+[ -z "$1" ] && { echo "Usage: drun <command> [file/directory]"; exit 1; }
+cmd="$1"
+target="${2:-$PWD}"
+[ ! -e "$target" ] && { echo "Error: File or directory '$target' not found."; exit 1; }
+echo "Monitoring size of '$target' for changes..."
+prev_size=$(du -sb "$target" | awk '{print $1}')
+while sleep 1; do
+	size=$(du -sb "$target" | awk '{print $1}')
+	if [ "$prev_size" -ne "$size" ]; then
+	prev_size="$size"
+	zsh -ci $cmd
+	fi 
+done

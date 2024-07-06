@@ -1,0 +1,63 @@
+#!/bin/zsh -i
+# paste copied dirs/files in other dir
+need xclip
+destination=$PWD
+move=false
+if ! command -v fzf &> /dev/null; then
+  echo "fzf is required but not installed. Aborting."
+  exit 1
+fi
+while getopts ":mhd:" opt; do
+  case $opt in
+    m)
+      move=true
+      ;;
+    h)
+      echo "Usage: paste [-m] [-h] [-d destination_directory]"
+      echo "Options:"
+      echo "  -m    Move (cut) the copied items instead of copying"
+      echo "  -h    Show this help message"
+      echo "  -d    Specify the destination directory"
+      exit 0
+      ;;
+    d)
+      destination="$OPTARG"
+      ;;
+    ?)
+      echo "Invalid option: -$OPTARG"
+      exit 1
+      ;;
+  esac
+done
+shift $((OPTIND -1))
+if [[ ${#copied[@]} -eq 0 ]]; then
+  echo "No items have been copied yet."
+  exit 1
+fi
+selected_items=$(printf "%s\n" "${copied[@]}" | fzf-splitted --multi)
+if [[ -z "$selected_items" ]]; then
+  echo "No items selected. Aborting."
+  exit 1
+fi
+if [[ $# -gt 0 ]]; then
+  destination="$1"
+  shift
+fi
+if [[ ! -d $destination ]]; then
+  echo "The destination path is not a valid directory: $destination"
+  exit 1
+fi
+while read -r item; do
+  if $move; then
+    if [[ -e $item ]]; then
+      mv -f "$item" "$destination" 2>/dev/null
+      echo "Moved: $item to $destination"
+    fi
+  else
+    if [[ -e $item ]]; then
+      cp -rf "$(realpath "$item")" "$destination" 2>/dev/null
+      echo "Copied: $item to $destination"
+    fi
+  fi
+  copied=("${copied[@]/$item}")
+done <<< "$selected_items"

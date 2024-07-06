@@ -1,0 +1,42 @@
+#!/bin/bash
+# pwd markdown images list formatter
+output_file="IMAGES.md"
+image_files=$(find . -maxdepth 2 -type f \( -iname "*.jpg" -o -iname "*.jpeg" -o -iname "*.png" \))
+{
+    echo "### Images"
+    subdirs=()
+    while IFS= read -r image_file; do
+        subdir=$(dirname "$image_file")
+        subdir="${subdir#./}" # Remove the "./" prefix
+        if [[ ! " ${subdirs[@]} " =~ " ${subdir} " ]]; then
+            subdirs+=("$subdir")
+        fi
+    done <<< "$image_files"
+    for subdir in "${subdirs[@]}"; do
+        echo "<details>"
+        echo "<summary>$subdir</summary>"
+        echo ""
+        echo "<p>"
+        find "$subdir" -maxdepth 1 -type f \( -iname "*.jpg" -o -iname "*.jpeg" -o -iname "*.png" \) -print0 | while IFS= read -r -d '' image_file; do
+            filename=$(basename "$image_file")
+            size=$(stat -c%s "$image_file")
+            dimensions=$(identify -format "%wx%h" "$image_file")
+            echo "<details>"
+            echo "<summary>${filename%.*}</summary>"
+            echo ""
+            echo "<img src=\"$image_file\" alt=\"$filename\">"
+            echo ""
+            echo "<table>"
+            echo "<tr><th>Size (bytes)</th><th>Dimensions (pixels)</th><th>Name</th></tr>"
+            echo "<tr><td>$size</td><td>$dimensions</td><td>$filename</td></tr>"
+            echo "</table>"
+            echo ""
+            echo "</details>"
+        done
+        echo "</p>"
+        echo ""
+        echo "</details>"
+        echo ""
+    done
+} > "$output_file"
+echo "Markdown file generated successfully at $output_file."

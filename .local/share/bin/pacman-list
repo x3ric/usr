@@ -1,0 +1,44 @@
+#!/bin/zsh -i
+# List system packages aur/pacman
+case "$1" in
+    -p)
+        pacman -Qen | bat --file-name "Pacman packages"
+        o=$(pacman -Qen | wc -l)
+        echo -e "Official : $o"
+        d=$(pacman -Qd | wc -l)
+        echo -e " Dependency : $d"
+        ;;
+    -a)
+        pacman -Qem | bat --file-name "AUR packages"
+        a=$(pacman -Qem | wc -l)
+        echo -e "AUR : $a"
+        ad=$(pacman -Qdm | wc -l)
+        echo -e " Dependency : $ad"
+        ;;
+    -pa|-ap)
+        pacman -Qe | bat --file-name "Aur/Pacman packages"
+        all=$(pacman -Q | wc -l)
+        echo -e "All : $all"
+        d=$(pacman -Qd | wc -l)
+        echo -e " Dependency : $d"
+        o=$(pacman -Qen | wc -l)
+        echo -e "Official : $o"
+        ad=$(pacman -Qdm | wc -l)
+        echo -e " Dependency : $ad"
+        a=$(pacman -Qem | wc -l)
+        echo -e "AUR : $a"
+        od=$(pacman -Qdn | wc -l)
+        echo -e " Dependency : $od"
+        ;;
+    -h|--help)
+        echo "Usage: pacman-list [OPTION]"
+        echo "Options:"
+        echo "  -p         List official (pacman) packages"
+        echo "  -a         List AUR packages"
+        echo "  -pa        List both official and AUR packages"
+        echo "  -h, --help Show this help message"
+        ;;
+    *)
+        echo "Invalid option. Use '-h' or '--help' for more information."
+        ;;
+esac

@@ -20,6 +20,7 @@
     local float      = require("lib.widgets.float")
     local widget     = require("lib.widgets.bar")
     local utils      = require("lib.utils")
+    local xres = require("lib.utils.xres")
     local layouts    = require("lib.layouts")
     local menu       = require("menu")
 -- External libs
@@ -223,7 +224,15 @@
             if not classMatched and next(keys) ~= nil then
                 float.notify:show({ text = "No tips for " .. client.focus.class })
             end
-        end                 
+        end    
+        function run_rofi_with_dpi()
+            local dpi = xres.dpi()
+            local rofi_command = "rofi -show drun -theme applications -show-icons"
+            if dpi ~= 75 then
+                rofi_command = string.format("%s -dpi %d", rofi_command, dpi - 35)
+            end
+            awful.spawn.with_shell(rofi_command)
+        end     
         local apprunner_keys_move = {
             {{ }, "Down", function() apprunner:down() end,{ description = "Select next item", group = "Navigation" }},
             {{ }, "Up", function() apprunner:up() end,{ description = "Select previous item", group = "Navigation" }},
@@ -421,7 +430,7 @@
             {{ env.mod }, "Print" , function () awful.spawn.with_shell("zsh -ci screenshot") end,{description = "Screenshot" , group = "Screen"}},
             {{ env.mod , "Shift" }, "Print" , function () awful.spawn.with_shell("zsh -ci 'screenshot crop'") end,{description = "Screencrop" , group = "Screen"}},
             {{ env.mod , env.alt }, "Print", function () awful.spawn.with_shell("zsh -ci screentext") end,{description = "Screen text ocr", group = "Screen"}},
-            {{ env.mod }, "F3" , function () awful.spawn.with_shell("zsh -ci 'rofi -show drun -theme applications -show-icons'" ) end,{description = "menu appfinder" , group = "Actions"}},
+            {{ env.mod }, "F3" , function() run_rofi_with_dpi() end,{description = "menu appfinder" , group = "Actions"}},
             {{ env.mod }, "F4" , function() awful.spawn.with_shell("zsh -ci picom-toggle") end,{description = "Picom toggle" , group = "Actions"}},
             {{ env.mod }, "," , function() awful.spawn.with_shell("rofi -modi emoji -show emoji -theme x") end,{description = "Emoji menu" , group = "Actions"}},        
             {{ env.mod }, "w" , function () awful.util.spawn( env.browser ) end,{description = "Open Broswer", group = "Actions"}},
@@ -430,7 +439,7 @@
             {{ env.mod }, "Escape" , function () awful.util.spawn( "xkill" ) end,{description = "Kill proces" , group = "Actions"}},
             {{ env.mod , "Shift" }, "c" , function ()  awful.util.spawn("gpick -s") end,{description = "Color picker" , group = "Actions"}},
             {{ env.mod }, "p" , function () toggleapp("arandr") end,{description = "Screen projection" , group = "Screen"}},
-            {{ env.mod , "Shift" }, "n", show_all_minimized_apps,{description = "show all minimized apps", group = "client"}},
+            {{ env.mod , "Shift" }, "n", function() show_all_minimized_apps() end,{description = "show all minimized apps", group = "client"}},
             --{{ env.mod }, "b" , function () for s in screen do s.panel.visible = not s.panel.visible if s.panel then s.panel.visible = not s.panel.visible end end end,{description = "toggle wibox" , group = "Actions"}},
             {{ env.mod, "Shift" }, "x", function() logout:show() end,{ description = "Log out screen", group = "Widgets" }},
             --{{ env.mod , "Shift" }, "d",function () awful.spawn(string.format("dmenu_run -i -nb '%s' -nf '%s' -sb '%s' -sf '%s' -fn NotoMonoRegular:bold:pixelsize=11",beautiful.bg_normal, beautiful.fg_normal, beautiful.bg_focus, beautiful.fg_focus))end,{description = "Show dmenu" , group = "Actions"}},

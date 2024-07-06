@@ -1,8 +1,6 @@
 #!/bin/bash
 # Awesome Xephyr "Dev"
-if ! pacman -Q xorg-server-xephyr &> /dev/null; then
-    sudo pacman -Sy --needed --noconfirm xorg-server-xephyr
-fi
+need xorg-server-xephyr
 if [[ -z $1 ]];then 
     conf="awesome"
 else

@@ -1,0 +1,3 @@
+bindkey '^ ' autosuggest-accept
+bindkey -s '^B' "bookmark list\n"
+bindkey -s '^T' "td\n"

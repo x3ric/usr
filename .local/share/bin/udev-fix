@@ -1,0 +1,12 @@
+#!/bin/zsh
+# Fix serial ports to have read/write permissions on usb connection
+UDEV_RULES_PATH="/etc/udev/rules.d/50-ttyusb.rules"
+if [ ! -f "$UDEV_RULES_PATH" ]; then
+    UDEV_RULE1='KERNEL=="ttyUSB*", MODE="0666"'
+    UDEV_RULE2='KERNEL=="ttyACM*", MODE="0666"'
+    sudo bash -c "echo '$UDEV_RULE1' > '$UDEV_RULES_PATH'"
+    sudo bash -c "echo '$UDEV_RULE2' >> '$UDEV_RULES_PATH'"
+    sudo udevadm control --reload-rules
+    sudo udevadm trigger
+    echo "Udev rules created and reloaded."
+fi

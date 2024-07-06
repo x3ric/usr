@@ -1,0 +1,4 @@
+#!/bin/bash
+sudo pacman -Sy --noconfirm --needed appmenu-gtk-module libdbusmenu-qt4 libdbusmenu-qt5 libdbusmenu-gtk2 libdbusmenu-gtk3 gtk3 bamf python python-gobject python-dbus
+yay -Sy --quiet --noconfirm --needed python-fuzzysearch
+yay -Sy --quiet --noconfirm --needed rofi

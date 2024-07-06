@@ -1,0 +1,24 @@
+#!/bin/zsh -i
+# Xorg root wallpaper video mpv and fzf to select Video in $HOME/Videos
+need mpv
+videos=($(find "$HOME/Videos" -maxdepth 3 -type f -iregex '.*\.\(webm\|mp4\)' | sort ))
+if command -v xwrap &>/dev/null; then
+    videos+=("Quit")
+else
+    videos+=("Install")
+fi
+selected_video=$(awk 'BEGIN {for (i=1; i<=ARGC; i++) print ARGV[i]}' "${videos[@]}" | fzf-splitted)
+if [[ "$videos" == "Quit" ]]; then
+    pkill -f "mpv" &>/dev/null
+elif [[ "$videos" == "Install" ]]; then
+    sudo pacman --noconfirm -S libx11
+    cd $HOME/.local/share/opt/xwrap
+    make
+    sudo make install
+    echo "Rerun to use."
+else
+    if command -v xwrap &>/dev/null; then
+        pkill -f "mpv" &>/dev/null
+        nohup xwrap -o 1.0 -nf -ovr -- mpv -wid WID --loop-file=inf --video-unscaled --no-terminal --no-audio --no-input-default-bindings --no-border --no-window-dragging --no-osc --no-osd-bar "$selected_video" 2>/dev/null &>/dev/null &!
+    fi
+fi

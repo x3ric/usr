@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/zsh -i
 # Simple Lock sceen for hibernation/sleep
 lock="physlock"
 lockpath=$(which $lock)
@@ -6,9 +6,7 @@ login_msg="Arch login: $USER"
 if [[ "$1" == "run" ]]; then
     $lockpath -p "$login_msg"
 fi
-if ! pacman -Q $lock &> /dev/null; then
-    sudo pacman -Sy --needed --noconfirm $lock
-fi
+need $lock
 show_help() {
     echo "Usage: lock [OPTIONS]"
     echo "Options:"

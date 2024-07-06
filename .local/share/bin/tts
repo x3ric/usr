@@ -1,0 +1,28 @@
+#!/bin/zsh -i
+# Google TextToSpech
+text="$1"
+if [[ -z $1 ]]; then
+    echo "tts <text> <lang> <dir>"
+    exit 1   
+fi
+if [[ -z $2 ]]; then
+    lang="en"
+else
+    lang="$2"
+fi
+need mpg123
+encoded_text=$(echo "$text" | sed -e 's/ /+/g')
+api_url="https://translate.google.com/translate_tts?ie=UTF-8&q=$encoded_text&tl=$lang&client=tw-ob"
+if [[ -z $3 ]]; then
+    temp_mp3_file=$(mktemp -t tts-XXXXXXXX.mp3)
+else
+    temp_mp3_file="$3"
+fi
+curl -o "$temp_mp3_file" "$api_url" NUL
+if pactl list modules | grep -q "virtual_mic" ;then
+    paplay -d virtual_mic "$temp_mp3_file" NUL &!
+fi
+mpg123 "$temp_mp3_file" NUL
+if [[ -z $3 ]]; then
+    rm "$temp_mp3_file" NUL
+fi

@@ -1,0 +1,3 @@
+#!/bin/bash
+# Developer Quotes
+curl -s "http://www.developerexcuses.com/" | grep -o "<center style=\"color: #333;.*</a></center>" | sed 's/<[^>]*>//g' | sed 's/^[ \t]*//;s/[ \t]*$//'

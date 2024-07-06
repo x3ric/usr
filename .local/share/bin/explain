@@ -1,0 +1,59 @@
+#!/bin/zsh -i
+# Universal explainer
+name=$1
+al="$HOME/.local/zsh/aliasrc"
+fn="$HOME/.local/zsh/funcrc"
+def=$(declare -f $name)
+if [[ -z "$1" ]]; then # if no argument prewiev zshconf
+    highlight -S sh -i "$al" | bat --style=grid,header --file-name $al
+    highlight -S sh -i "$fn" | bat --style=grid,header --file-name $fn
+    exit 1
+else    
+    case "$(whence -w $name)" in
+        *"alias"*)
+            if [[ -n "$def" ]] ; then
+                echo $def | highlight -S sh | bat --style=grid,header,snip --file-name "$(type -a $name | sed '2!d' | cut -d " " -f 7)"
+            fi
+            alias="$(alias $name | sed "s/['\"]//g" | cut -d "=" -f 2)"
+            if [[ "$(echo $alias | cut -d '|' -f 1 | cut -d ' ' -f 1)" == *"sudo"* ]]; then
+                namenext="$(echo $alias | cut -d '|' -f 1 | cut -d ' ' -f 2 )"
+            else
+                namenext="$(echo $alias | cut -d '|' -f 1 | cut -d ' ' -f 1 )"         
+            fi
+            if [[ $namenext != $name ]]; then
+                if ! alias $namenext && command -v "$namenext" && ! type -a "$namenext" | cut -d ' ' -f 3 | grep -q "ELF";then
+                    explain $namenext
+                fi
+            fi
+            if [[ "$(whence -w $namenext)" != *"builtin"* ]]&&[[ "$(alias $name | cut -d '|' -f 1 | cut -d ' ' -f 1)" != *"sudo"* ]]&&[[ "$(alias $name)" != *"|"* ]]; then
+                complexity="$(type -a $name | wc -l)"
+                type -a $name #| sed ''$complexity'!d'
+            else
+                type -a $name #| sed '1!d'
+            fi
+            if [[ $namenext != $name ]] && [[ "$(alias $name)" == *"|"* ]]; then
+                explain "$(alias $name | sed "s/['\"]//g" | cut -d "=" -f 2 | cut -d '|' -f 2 | cut -d ' ' -f 2)"
+            fi
+            ;;
+        *"command"*|*"builtin"*)
+            file=$(type -a $name | head -n 1 | awk '{print $3}')
+            file="$(realpath -q $file)"
+            if [[ -n "$file" ]] && ! grep -q "ELF" $file  ; then
+                desc=$(sed -n '2{s/#[[:space:]]//g;p;}' "$file")
+                highlight -S sh -i $file  | bat --style=grid,header,snip --file-name "$file Comment: $desc"
+            else
+                echo "$file"
+            fi
+            ;;
+        *"function"*)
+            desc=$(sed -n "/^[[:space:]]*$name() { #/{s/^[[:space:]]*$name() { #[[:space:]]*//;p;q;}" "$fn")
+            if [[ -n "$def" ]]; then
+                echo $def | highlight -S sh | bat --style=grid,header,snip --file-name "$fn Comment: $desc"
+            fi
+            ;; 
+        *)
+            echo -e "$name not found"
+            exit 1
+            ;;
+    esac
+fi

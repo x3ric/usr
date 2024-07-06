@@ -1,0 +1,19 @@
+#!/usr/bin/env zsh
+# Make a screenshot
+if [[ $1 == "-h" || $1 == "--help" ]]; then
+	echo -e "'crop' as \$1 to cut a part of the screen"
+	return 0
+fi  
+if [ ! -d "$HOME/Pictures/Screenshots" ]; then
+	mkdir -p "$HOME/Pictures/Screenshots"
+fi
+cd $HOME/Pictures/Screenshots
+need scrot
+need xclip
+if [[ $1 == "crop" ]]; then
+	scrot -l  mode=edge,style=dash,width=1,opacity=100 -s 'Arch-%Y-%m-%d-%s_screencrop_$wx$h.jpg' -e 'notify-send 'Screenshot' $f && timeout 0.5 feh --title Preview --scale-down -s $f' 
+else
+	scrot 'Arch-%Y-%m-%d-%s_screenshot_$wx$h.jpg' -e 'notify-send 'Screenshot' $f && timeout 0.5 feh --title Preview --scale-down -s $f' 
+fi
+LASTSCREENSHOT=$(ls -t1 | head -n 1)
+xclip -selection clipboard -t image/png -i $LASTSCREENSHOT 

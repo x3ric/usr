@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+# Simulating keybord input to type copied "force paste"
+need xclip
+need xdotool
+[[ -z $1 ]] && lay="us"
+[[ ! -z $1 ]] && lay=$1
+LAYOUTOLD=$(setxkbmap -query | awk '/layout:/ {print $2}')
+setxkbmap $lay -option caps:none
+xdotool type "$(xclip -o)" && sleep 1
+trap "setxkbmap $LAYOUTOLD -option caps:none" 0

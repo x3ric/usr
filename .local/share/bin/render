@@ -1,0 +1,37 @@
+#!/bin/zsh -i
+# Render images in the terminal
+display_info=false
+if [[ $# -eq 0 ]]; then
+    echo "Usage: render [-i | --info],[-b] <image_file1> <image_file2> ..."
+    return 1
+fi
+if [[ $1 == "-i" ]] || [[ $1 == "--info" ]]; then
+    display_info=true
+    shift
+fi
+for image_file in "$@"; do
+    image_file=$(realpath $image_file 2>/dev/null)
+    if $display_info; then
+        file_size_bytes=$(du -b "$image_file" | cut -f1)
+        file_size_kb=$((file_size_bytes / 1024))
+        dimensions=$(identify -format "%wx%h" "$image_file" 2>/dev/null)
+        echo "\033[1;36m$image_file \033[1;33m[$file_size_kb KB]\033[1;32m [$dimensions]\033[0m"
+    fi
+    if [[ $KITTY_WINDOW_ID ]]; then
+        if [[ $1 == "-b" ]]; then
+            kitty @ --to $KITTY_LISTEN_ON set-background-image "$image_file" 2>/dev/null
+        else
+            icat "$image_file"
+        fi
+    elif tty -s; then
+        need chafa
+        chafa --stretch -C on $image_file
+    else
+        need ueberzug
+        echo '{"action": "add", "x": 0, "y": 0, "identifier": "test", "path": "'"$image_file"'"}' | ueberzug layer --parser json
+    fi
+done
+if [[ ! -f "$image_file" ]]; then
+    echo "Error: File '$image_file' not found."
+    return 1
+fi

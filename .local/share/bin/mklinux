@@ -1,7 +1,7 @@
 #!/bin/bash
 # Linux From Scratch in a WM
 # Deps
-function check_install_dependency() {
+function need() {
     local dependency=$1
     local install_command=$2
     if ! pacman -Q $dependency &> /dev/null; then
@@ -9,16 +9,16 @@ function check_install_dependency() {
         eval $install_command
     fi
 }
-check_install_dependency "xmlto" "sudo pacman -Sy --needed --noconfirm xmlto"
-check_install_dependency "kmod" "sudo pacman -Sy --needed --noconfirm kmod"
-check_install_dependency "bc" "sudo pacman -Sy --needed --noconfirm bc"
-check_install_dependency "inetutils" "sudo pacman -Sy --needed --noconfirm inetutils"
-check_install_dependency "libelf" "sudo pacman -Sy --needed --noconfirm libelf"
-check_install_dependency "cpio" "sudo pacman -Sy --needed --noconfirm cpio"
-check_install_dependency "git" "sudo pacman -Sy --needed --noconfirm git"
-check_install_dependency "qemu" "sudo pacman -Sy --needed --noconfirm qemu-full"
-check_install_dependency "syslinux" "sudo pacman -Sy --needed --noconfirm syslinux"
-check_install_dependency "mtools" "sudo pacman -Sy --needed --noconfirm mtools"
+need "xmlto" "sudo pacman -Sy --needed --noconfirm xmlto"
+need "kmod" "sudo pacman -Sy --needed --noconfirm kmod"
+need "bc" "sudo pacman -Sy --needed --noconfirm bc"
+need "inetutils" "sudo pacman -Sy --needed --noconfirm inetutils"
+need "libelf" "sudo pacman -Sy --needed --noconfirm libelf"
+need "cpio" "sudo pacman -Sy --needed --noconfirm cpio"
+need "git" "sudo pacman -Sy --needed --noconfirm git"
+need "qemu" "sudo pacman -Sy --needed --noconfirm qemu-full"
+need "syslinux" "sudo pacman -Sy --needed --noconfirm syslinux"
+need "mtools" "sudo pacman -Sy --needed --noconfirm mtools"
 # Main Kernel download
 DIRLX="$HOME/.local/mklinux"
 function clone() {
@@ -88,7 +88,10 @@ function install() {
     echo "System Linux building"
     cd "$DIRLX/linux"
     rm -rf .config
-    cp $HOME/.cache/mklinuc/.config ./.config
+    if [[ "$HOME/.cache/mklinux/.config" ]]; then
+        zcat /proc/config.gz > /home/e/scripts/.cache/mklinux/.config
+    fi
+    cp $HOME/.cache/mklinux/.config ./.config
     make mrproper
     if [[ ! -f "$DIRLX/linux/.config" ]]; then
         make defconfig

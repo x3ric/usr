@@ -220,7 +220,7 @@ function theme:init()
 			},
 			-- icon theme settings
 			icons = {
-				theme         = self.homedir .. "/.local/share/icons/ACYLS", -- user icon theme path
+				theme         = self.homedir .. "/.icons/ACYLS", -- user icon theme path
 				df_icon       = self.icon.system, -- default (fallback) icon
 				custom_only   = true, -- use icons from user theme (no system fallback like 'hicolor' allowed) only
 				scalable_only = true  -- use vector(svg) icons (no raster icons allowed) only
@@ -808,7 +808,7 @@ function theme:init()
 				}
 			-- Hotkeys helper
 				self.float.hotkeys = {
-					geometry      = { width = 1200, height = 900 }, -- widget size
+					geometry      = { width = mouse.screen.workarea.width * 0.95, height = mouse.screen.workarea.height * 0.95 }, -- widget size
 					border_margin = { 20, 20, 8, 10 },              -- margins around widget content
 					border_width  = 1,                              -- widget border width
 					delim         = "   ",                          -- text separator between key and description

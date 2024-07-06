@@ -1,0 +1,145 @@
+#To bypass an alias, preceed the command with a '\'
+#Example ls is aliased to lsd, to use the normal ls use type: \ls
+# Command line head / tail shortcuts
+  alias t='tail -f'
+  if [ -z $BASH ]; then
+    alias -g H='| head'
+    alias -g T='| tail'
+    alias -g G='| grep'
+    alias -g L='| less'
+    alias -g M='| more'
+    alias -g LL='2>&1 | less'
+    alias -g CA='2>&1 | cat -A'
+    alias -g NE='2> /dev/null'
+    alias -g NUL='> /dev/null 2>&1'
+  fi
+# Utils 
+  alias torrent='aria2c'
+  alias clipdir='pwd | xclip -rmlastnl'
+  alias open='xdg-open' 
+  alias openports='ss -ltnp'
+  alias grub-mkconfig='sudo grub-mkconfig -o /boot/grub/grub.cfg'
+  alias devices='lspci -k -v -vm'
+  alias diskmnp='df -h -T'
+  alias disk='lsblk'
+  alias xev-input='xev | awk -F"[ )]+" '"'"'/^KeyPress/ { a[NR+2] } NR in a { printf "%-3s %s\n", $5, $8 }'"'"''
+  alias upt="echo -e \"$(uptime --pretty | sed -e 's/up //g' -e 's/ days/d/g' -e 's/ day/d/g' -e 's/ hours/h/g' -e 's/ hour/h/g' -e 's/ minutes/m/g' -e 's/, / /g')\""
+  alias psstat='_psstat() { ; if [[ $1 == "cpu" ]]; then ;ps -eo pid,comm,%cpu --sort=-%cpu | head ;elif [[ $1 == "ram" ]]; then ;ps -eo pid,comm,%mem --sort=-%mem | head ;else ;echo "cpu or ram?" && read mode && _psstat $mode ;fi } ;_psstat'
+  alias wifi-qr='nmcli device wifi show-password'
+  alias webpage-get='wget --user-agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3" --recursive --no-clobber --page-requisites --html-extension --convert-links --restrict-file-names=windows --no-parent'
+# Output
+  alias pacman='pacman --color always' 
+  alias yay='yay --color always' 
+  alias grep='grep --color'
+  alias glow='glow -s dark'
+  alias clearcolors='sed "s/\x1b\[[0-9;]*m//g"'
+  alias highlight='highlight -O ansi'
+  alias bat='bat --color=never --theme ansi'
+  alias ccat='highlight --force -i'
+  alias cbat='_cbat() { highlight --force -i $1 | bat }; _cbat'
+  alias icat='kitty +kitten icat'
+# Fzf utils
+  alias fzf='fzf --color=16'
+  alias fzf-tmux='fzf-tmux --color=16'
+  alias fzf-file='x=$(fzf-splitted) && xdg-open $x'
+  alias fzf-dir='x=$(find . -type d -print 2>/dev/null | fzf-splitted) && thunar ${x%/*}'
+  alias fzf-dircd='x=$(find . -type d -print 2>/dev/null | fzf-splitted) && cd ${x%/*}'
+  alias fzf-images='fzf --preview-window=up:95% --cycle --preview "fzf-preview {}"'
+# Pkg managment
+  alias y='yay-'
+  alias yu='yay -Syyu'
+  alias yr='yay -Rns'
+# Custom tweaks
+  if command -v yarn &>/dev/null;then
+  alias yarn='yarn --use-yarnrc "$XDG_CONFIG_HOME/yarn/config"'
+  fi
+  if command -v gdb &>/dev/null;then
+  alias gdb="gdb -q"
+  fi
+  alias wget="wget --hsts-file=\"$XDG_CACHE_HOME/wget-hsts\""
+  alias hibernate='systemctl hibernate'
+  alias rg='kitty +kitten hyperlinked_grep'
+  if command -v screen &>/dev/null;then
+  alias screen='screen -c $HOME/.config/screenrc'
+  fi
+  alias mount='mount | column -t'
+  alias unmount='umount'
+  alias sgrep='grep -R -n -H -C 5 --exclude-dir={.git,.svn,CVS} '
+  alias hgrep='fc -El 0 | grep'
+  alias dud='du -d 1 -h'
+  alias duf='du -sh *'
+  alias fd='find . -type d -name'
+  alias ff='find . -type f -name'
+  alias man='manx'
+  alias help='man'
+  alias lf='lfx'
+  alias info='pinfo'
+  if [[ ! -z $tty && ! -z $scrollvt && -z $SSH_TTY ]]; then
+	alias setfont='vtdirect setfont'
+	alias startx='vtdirect startx'
+  alias logout='vtdirect logout'
+	alias mpv='vtdirect mpv'
+  fi
+  if [[ -z $tty ]]; then
+  alias ls.='lsd -a --hyperlink=auto'
+  alias ls='lsd --hyperlink=auto'
+  alias l='lsd --tree --hyperlink=auto'
+  else
+  alias ls.='lsd -a --icon never'
+  alias ls='lsd --icon never'
+  alias l='lsd --tree --icon never'
+  fi
+  alias p='ps -f'
+  alias ka='killall'
+  alias sortnr='sort -n -r'
+  alias unexport='unset'
+  alias rm='rmtrash'
+  alias rmdir='rmdirtrash'
+  alias cp='cp -i'
+  alias cpwd='cp -ri $PWD'
+  alias mv='mv -i'
+  alias unvim='sudo rm -drf ~/.local/share/nvim'
+  alias ungit='sudo rm -drf .git && rm .gitignore'
+  alias nvim-default='NVIM_APPNAME=none nvim'
+  alias v='nvim'
+  alias py='python3'
+  alias tmux='tmux source-file $HOME/.config/tmux/tmux.conf; tmux'
+  alias tm='tmux'
+  if [ -f /usr/bin/walengine ] ; then
+  alias walengine='WEBKIT_DISABLE_COMPOSITING_MODE=1 walengine'
+  fi
+  alias hosts='v /etc/hosts && sudo systemctl restart systemd-resolved.service && sudo systemd-resolve --flush-caches'
+  alias ftp-thunar='_ftp-thunar() { if [ -z $2 ]; then p=sftp; else p=$2; fi; thunar --daemon $p://$1 &!}; _ftp-thunar'
+  # enables top menu but alt+\ "global hud" not work in it
+  alias globalhud-disable='UBUNTU_MENUPROXY=0'
+# Adb utils
+  if command -v adb >/dev/null 2>&1 ; then
+  alias adb-ip="adb shell \"ip addr | grep 'inet ' | sed -n '2p' | cut -d' ' -f6 | cut -d'/' -f1\""   
+  alias adb-wireless='_adb-wireless() { adb tcpip 5454 && adb connect $a:5454 }; a=$(adb-ip); _adb-wireless'
+  alias adb-mtp='adb shell svc usb setFunctions mtp'
+  alias adb-input='_adb-input() { if [ -z "$1" ]; then echo -n "Enter text: " && read -r text && text="${text// /\\ }" && adb shell input text "$text"; else text="${1// /\\ }" && adb shell input text "$text"; fi }; _adb-input'
+  alias adb-tap='_adb-tap() { while true; do echo -n "Enter x y: " && read -r x y && adb shell input tap "$x" "$y"; done }; _adb-tap'
+  alias adb-screen='if ! pacman -Q scrcpy &>/dev/null; then sudo pacman -Sy scrcpy; fi && scrcpy'
+  alias adb-screenshot='adb exec-out screencap -p > ./screenshot.png'
+  alias adb-screenrecord='echo -e "Starting recording\nCtrl+c to stop.\nadb pull /sdcard/screenvid.mp4 ./\nto get the video from the device\n" && adb shell screenrecord /sdcard/screenvid.mp4'
+  alias adb-keyevent='adb shell input keyevent'
+  alias adb-keyevent-help='xdg-open https://developer.android.com/reference/android/view/KeyEvent NUL'
+  fi
+# Fixes for gtk3-nocsd-git
+  if command -v wine &>/dev/null 2>&1 ;then
+  alias libclear='LD_PRELOAD=$(echo "$LD_PRELOAD" | sed 's@/usr/lib/libgtk3-nocsd.so.0@@g')'
+  wine_commands=("wine" "wineboot" "winecfg" "wineconsole" "winedbg" "winefile" "winepath" "winetricks")
+  for command in "${wine_commands[@]}"; do
+  alias "$command"="libclear $command"
+  done
+  fi
+# Fast shortcuts
+  alias zshrc='${=EDITOR} ~/.zshrc'
+  alias aliasrc='${=EDITOR} ~/.local/zsh/aliasrc'
+  alias funcrc='${=EDITOR} ~/.local/zsh/funcrc'
+  alias envrc='${=EDITOR} ~/.local/zsh/envrc'
+  alias inputrc='${=EDITOR} ~/.local/zsh/inputrc'
+  alias comprc='${=EDITOR} ~/.local/zsh/comprc'
+# Awesome 
+  alias awesome-refresh='awesome-client "awesome.restart()"'
+  alias awesome-refresh-auto='drun awesome-refresh "$HOME/.config/awesome"'

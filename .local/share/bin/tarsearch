@@ -1,0 +1,60 @@
+#!/bin/bash
+# Function to search for a pattern in all tar and tar.gz files within a directory
+need pigz-git
+help() {
+  echo "Usage: $0 [-d directory] [-f file] <pattern>"
+  exit 1
+}
+if [ "$#" -lt 1 ] || [ "$1" = "-h" ] || [ "$1" = "--help" ]; then
+  help
+fi
+pattern=""
+path=""
+is_directory=false
+is_file=false
+while getopts ":d:f:" opt; do
+  case ${opt} in
+    d )
+      is_directory=true
+      path="${OPTARG}"
+      ;;
+    f )
+      is_file=true
+      path="${OPTARG}"
+      ;;
+    \? )
+      echo "Invalid option: -$OPTARG" 1>&2
+      help
+      ;;
+    : )
+      echo "Option -$OPTARG requires an argument" 1>&2
+      help
+      ;;
+  esac
+done
+shift $((OPTIND - 1))
+if [ "$#" -ne 1 ]; then
+  echo "Error: Pattern is required."
+  show_help
+  exit 1
+fi
+pattern="$1"
+if ! $is_directory && ! $is_file; then
+  echo "Error: You must specify either -d for directory or -f for file."
+  show_help
+  exit 1
+fi
+if [ ! -e "$path" ]; then
+  echo "Error: $path does not exist."
+  exit 1
+fi
+if $is_directory && [ -d "$path" ]; then
+  find "$path" -maxdepth 1 -type f \( -name "*.tar" -o -name "*.tar.gz" \) -print0 |
+  while IFS= read -r -d '' tar_file; do
+    pigz -dc "$tar_file" 2>/dev/null | tar xf - --to-stdout 2>/dev/null | grep -iE "$pattern" && echo "Pattern found in: $tar_file"
+  done
+elif $is_file && [ -f "$path" ]; then
+  tar xOf "$path" | grep -iE "$pattern" && echo "Pattern found in: $path"
+else
+  echo "Error: Invalid path or option provided."
+fi

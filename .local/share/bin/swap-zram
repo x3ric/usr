@@ -1,0 +1,25 @@
+#!/bin/bash
+# Zram swap file setup
+if [[ $1 == "-h" || $1 == "--help" ]]; then
+    echo -e "help -> -s = setsize, -u = uninstall"
+    exit
+elif ! pacman -Q zram-generator &> /dev/null; then
+    sudo pacman -S --needed zram-generator
+    echo -e "\nvm.swappiness = 180\nvm.watermark_boost_factor = 0\nvm.watermark_scale_factor = 125\nvm.page-cluster = 0" | sudo tee /etc/sysctl.d/99-vm-zram-parameters.conf
+    echo -e "[zram0]\nzram-size = ram / 2\noptions = X-mount.mode=1777\ncompression-algorithm = zstd\nswap-priority = 100\nfs-type = swap\n" | sudo tee /etc/systemd/zram-generator.conf 
+    sudo modprobe zram
+    sudo systemctl daemon-reload
+    sudo systemctl start /dev/zram0
+elif [[ $1 == "-s" ]]; then
+    echo -e "Examples"
+    echo -e "ram / 2"
+    echo -e "1024 * 4"
+    echo -e "Swap Size?"
+    read sz
+    echo -e "\nvm.swappiness = 180\nvm.watermark_boost_factor = 0\nvm.watermark_scale_factor = 125\nvm.page-cluster = 0" | sudo tee /etc/sysctl.d/99-vm-zram-parameters.conf
+    echo -e "[zram0]\nzram-size = $sz\noptions = X-mount.mode=1777\ncompression-algorithm = zstd\nswap-priority = 100\nfs-type = swap\n" | sudo tee /etc/systemd/zram-generator.conf 
+elif [[ $1 == "-u" ]]; then
+    sudo rm -rf  /etc/sysctl.d/99-vm-zram-parameters.conf
+    sudo rm -rf  /etc/systemd/zram-generator.conf
+fi
+zsh -ci swap

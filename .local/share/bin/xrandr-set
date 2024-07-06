@@ -1,0 +1,15 @@
+#!/bin/env bash
+# Xrandr permanent set for X in etc/X11/xinit/xinitrc
+arg=$1
+if [ -z "$arg" ]; then
+    echo -n 'Screen size XxY: '
+    read screensize
+    echo -n 'Refresh rate (Hz): '
+    read refresh_rate
+    display=$(xrandr | awk '/ connected/ {print $1; exit}')
+    sudo sed -i "/xrandr/c\xrandr --output $display --primary --mode $screensize --rate $refresh_rate --pos 0x0 --rotate normal" "/etc/X11/xinit/xinitrc"
+    xrandr --output $display --primary --mode $screensize --rate $refresh_rate --pos 0x0 --rotate normal
+else
+    $arg+=""
+    sudo sed -i "/xrandr/c\xrandr $arg" "/etc/X11/xinit/xinitrc"
+fi

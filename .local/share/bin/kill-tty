@@ -1,0 +1,7 @@
+#!/bin/zsh -i
+# Kill all process in a tty
+if [[ ! -z $1 ]] ; then
+	fuser -k "/dev/tty$1"
+else
+	fuser -k "/dev/$(ps -e -o tty= | grep "tty" | sort -u | grep -v "?" | fzf-splitted)"
+fi

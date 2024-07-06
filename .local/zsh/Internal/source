@@ -1,0 +1,27 @@
+
+if [[ (-z $tty) || (! -z $TMUX) ]] ; then # tty promt
+  source /$HOME/.local/zsh/Internal/p10k.zsh
+  source /usr/share/zsh-theme-powerlevel10k/powerlevel10k.zsh-theme # dep (AUR) zsh-theme-powerlevel10k-bin-git
+else
+  PS1='%F{green}['$USER'%F{yellow}@%F{blue}%~%F{green}]%F{reset}%# '
+fi
+
+[ -f "$HOME/.local/zsh/private" ] && source "$HOME/.local/zsh/private"
+[ ! -d "$HOME/.local/share/gnupg" ] && mkdir -p "$HOME/.local/share/gnupg"
+[ -f "$HOME/.local/zsh/envrc" ] && source "$HOME/.local/zsh/envrc"
+[ -f "$HOME/.local/zsh/aliasrc" ] && source "$HOME/.local/zsh/aliasrc"
+[ -f "$HOME/.local/zsh/funcrc" ] && source "$HOME/.local/zsh/funcrc"
+[ -f "$HOME/.local/zsh/comprc" ] && source "$HOME/.local/zsh/comprc"
+[ -f "$HOME/.local/zsh/comprc" ] && source "$HOME/.local/zsh/inputrc"
+
+source /usr/share/zsh/plugins/zsh-autosuggestions/zsh-autosuggestions.zsh 2>/dev/null # dep (EXTRA) zsh-autosuggestions
+source /usr/share/zsh/plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh 2>/dev/null # dep (EXTRA) zsh-syntax-highlighting
+[[ -s /etc/profile.d/autojump.sh ]] && source /etc/profile.d/autojump.sh 2>/dev/null # dep (EXTRA) autojump
+
+source /$HOME/.local/zsh/Internal/async.zsh
+source /$HOME/.local/zsh/Internal/fzf-tab.zsh
+source /$HOME/.local/zsh/Internal/fzf-key-bindings.zsh
+source /$HOME/.local/zsh/Internal/fzf-completion.zsh
+source /$HOME/.local/zsh/Internal/bgnotify.zsh
+source /$HOME/.local/zsh/Internal/zsh-autoquoter.zsh
+source /$HOME/.local/zsh/Internal/nice-exit-code.zsh

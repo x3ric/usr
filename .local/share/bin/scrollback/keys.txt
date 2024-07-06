@@ -1,5 +1,0 @@
-# control sequences for shift-pageup and shift-pagedown
-shift keycode 104 = F99
-shift keycode 109 = F100
-string F99  = "\033[11~"
-string F100 = "\033[12~"

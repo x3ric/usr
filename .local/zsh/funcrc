@@ -1,0 +1,392 @@
+# Utils
+
+ex() { # Universal archive extractor
+    if [ -f $1 ] ; then
+        case $1 in
+        *.tar.bz2)   tar xjf $1   ;;
+        *.tar.gz)    tar xzf $1   ;;
+        *.tar.xz)    tar xJf $1   ;;
+        *.bz2)       bunzip2 $1   ;;
+        *.rar)       unrar x $1   ;;
+        *.gz)        gunzip $1    ;;
+        *.tar)       tar xf $1    ;;
+        *.tbz2)      tar xjf $1   ;;
+        *.tgz)       tar xzf $1   ;;
+        *.zip)       unzip $1     ;;
+        *.Z)         uncompress $1;;
+        *.7z)        7z x $1      ;;
+        *)           echo "'$1' cannot be extracted via ex()" ;;
+        esac
+    else
+        echo "'$1' is not a valid file"
+    fi
+}
+
+setkeymap() { # set keyboard layout 
+    ttywal
+    if [[ -n $DISPLAY ]]; then
+        sudo localectl set-x11-keymap --no-ask-password $1
+        sudo setxkbmap $1
+    else
+        sudo loadkeys $1
+    fi
+}
+
+conf() { # config folder cd
+    local x="$HOME/.config"
+    local path="$x/$@"
+    if [ -d "$path" ]; then
+        cd "$path"
+    else
+        echo "Path does not exist: $path"
+        return 1
+    fi
+}
+
+fzf-splitted() { # fzf splitted view adaptation for tmux
+    if [[ -n "$TMUX" ]]; then 
+        fzf --reverse --ansi "$@"
+    else 
+        fzf-tmux -x --height ${FZF_TMUX_HEIGHT:-40%} --reverse --cycle --ansi "$@"
+    fi 
+}
+
+# Python
+
+pyenv() {
+    local command="$1"
+    local name="${2:-venv}"
+    create_venv() {
+        if [[ ! -d "$name" ]]; then
+            python -m venv "$name"
+            echo "Virtual environment '$name' created."
+        else
+            echo "Virtual environment '$name' already exists."
+        fi
+    }
+    activate_venv() {
+        if [[ -f "$name/bin/activate" ]]; then
+            source "$name/bin/activate"
+            echo "Activated virtual environment '$name'."
+            pip install --upgrade pip NUL
+        else
+            echo "Virtual environment '$name' does not exist."
+        fi
+    }
+    deactivate_venv() {
+        if [[ -n $VIRTUAL_ENV ]]; then
+            deactivate
+            echo "Deactivated virtual environment."
+        else
+            echo "No virtual environment is active."
+        fi
+    }
+    delete_venv() {
+        if [[ -d "$name" ]]; then
+            deactivate_venv
+            echo -n "Are you sure you want to delete the virtual environment '$name'? [y/N] "
+            read -r confirm
+            if [[ "$confirm" =~ ^[Yy]$ ]]; then
+                rm -rf "./$name"
+                echo "Virtual environment '$name' deleted."
+            else
+                echo "Operation canceled."
+            fi
+        else
+            echo "Virtual environment '$name' does not exist."
+        fi
+    }
+    list_venvs() {
+        echo "Virtual environments in the current directory:"
+        find . -maxdepth 1 -type d -name "venv*" -exec basename {} \;
+    }
+    case "$command" in
+        -g|--gen)
+            create_venv
+            ;;
+        -s|--source)
+            activate_venv
+            ;;
+        -d|--delete)
+            delete_venv
+            ;;
+        -l|--list)
+            list_venvs
+            ;;
+        -q|--quit)
+            deactivate_venv
+            ;;
+        -h|--help)
+            echo -e "Usage:\n  pyenv -g, --gen [name]         # Create a virtual environment\n  pyenv -s, --source [name]      # Source a virtual environment\n  pyenv -d, --delete [name]      # Delete a virtual environment\n  pyenv -l, --list               # List all virtual environments in the current directory\n  pyenv -q, --quit               # Deactivate the current environment\n  pyenv -h, --help               # Display this help message"
+            ;;
+        *)
+            create_venv
+            activate_venv
+            ;;
+    esac
+}
+
+# Git
+
+gpush() { # Git Push Utils
+    if [[ -z $1 ]] ; then
+        git add .
+        git commit -m "update"
+    else
+        git add .
+        git commit -m "$1"
+    fi
+    if [[ -z $2 ]]; then
+        git push -f origin main
+    else
+        git push -f origin "$2" 
+    fi
+}
+
+ginit() { # Git Init Utils
+  command -v gh >/dev/null 2>&1 || { echo >&2 "The 'gh' command is required. Please install it before running this function."; return 1; }
+  command -v git >/dev/null 2>&1 || { echo >&2 "The 'git' command is required. Please install it before running this function."; return 1; }
+  if [ -z "$1" ]; then
+    echo "Please provide a repository name as an argument."
+    return 1
+  fi
+  local commit_message="Init"
+  local branch_name="main"
+  if [ "$(du -sb . | cut -f1)" -gt $((2*1024*1024*1024)) ]; then
+    echo "The directory size exceeds 2 GB. Aborting."
+    return 1
+  fi
+  echo "Creating repository $1 on GitHub..."
+  gh repo create "$1" --public
+  echo "Initializing local Git repository..."
+  git init
+  echo "Adding all files to the staging area..."
+  git add .
+  echo "Committing changes..."
+  git commit -m "$commit_message"
+  echo "Renaming default branch to $branch_name..."
+  git branch -M "$branch_name"
+  echo "Setting remote origin to GitHub repository..."
+  git remote add origin "https://github.com/$(gh api user | jq ".login" | tr -d '"')/$1.git"
+  echo "Pushing changes to remote repository..."
+  git push -u origin "$branch_name"
+  echo "Done!"
+}
+
+greset() { # Git Squash all in 1 commit
+    if [[ -z $1 ]]; then
+        commit="Init"
+    else
+        commit="$1"
+    fi
+    tree=$(git write-tree)
+    commit=$(echo "$commit" | git commit-tree $tree)
+    git reset --hard $commit
+    git push origin main --force
+}
+
+gclone() { # Git Clone And Cd
+    if [[ -z $1 ]]; then
+        echo -n "Repo? --> "
+        read clonedir 
+    else
+        clonedir=$1
+    fi
+    git clone "$clonedir"
+    cd "$(basename "$clonedir" .git)"
+}
+
+g() { # Universal Git
+    state=$(echo -e "Clone\nReset\nPull\nPush\nInit" | fzf-splitted )
+    case $state in
+        "Clone") gclone "$1" ;;
+        "Reset") greset "$1" ;;
+        "Pull") git pull ;;
+        "Push") gpush "$1" ;;
+        "Init") ginit ;;
+        *)  echo "'$1' is not a valid option" ;;
+    esac
+}
+
+gh-clone() { # GitHub Private Repository Clone
+    if [[ $# -ne 2 ]]; then
+        echo "Usage: gh-git <username> <repository>"
+        echo "Example: gh-git exampleuser example-repo"
+    else
+        git clone "git@github.com:$1/$2"
+    fi
+}
+
+# Extra
+
+if command -v newsboat &>/dev/null; then
+rssadd() { # Add rss feeds to newsboat
+    if ! command -v urlscan &>/dev/null; then
+        sudo pacman -Sy --noconfirm urlscan
+    fi
+    if echo "$1" | grep -q "https*://\S\+\.[A-Za-z]\+\S*" ; then
+        url="$1"
+    else
+        url="$(grep -Eom1 '<[^>]+(rel="self"|application/[a-z]+\+xml)[^>]+>' "$1" | grep -o "https?://[^\" ]")"
+        echo "$url" | grep -q "https*://\S\+\.[A-Za-z]\+\S*" || notify-send "That doesn't look like a full URL." && exit 1
+    fi
+    RSSFILE="${XDG_CONFIG_HOME:-$HOME/.config}/newsboat/urls"
+    if awk '{print $1}' "$RSSFILE" | grep "^$url$" >/dev/null; then
+        notify-send "You already have this RSS feed."
+    else
+        echo "$url" >> "$RSSFILE" && notify-send "RSS feed added."
+    fi
+}
+fi
+
+# Zsh 
+
+nyack() { # command not found handler Dependency from "fzf,thefuck"
+    echo "Command $1 not found. Do you want to install $1?"
+    local options=("Install" "Skip" "Fix")
+    local install_choice=$(printf '%s\n' "${options[@]}" | fzf-splitted)
+    if [[ "$install_choice" == "Skip" ]]; then
+        echo "Command not installed. Skipping execution."
+        return 1
+    elif [[ "$install_choice" == "Fuck" ]]; then
+        echo "Using 'fuck' to correct your typo..."
+        fuck
+        return $?
+    elif [[ "$install_choice" == "Install" ]]; then
+        echo -e "Using 'instance' to execute the command in an instance ...\nctrl+c to quit without uninstalling"
+        if yay -S "$1"; then
+            echo "Command $1 has been installed." && pacman -Qi "$1" | grep -v 'None'
+            "$@"
+            local exit_code=$?
+            if yay -Rns "$1"; then
+                echo "Command $1 has been uninstalled after running in instance mode."
+            else
+                echo "Uninstallation after instance mode failed. Please check if the package is still available."
+            fi
+            return $exit_code
+        else
+            echo "Installation failed. Please check if the package is available."
+            return 1
+        fi
+    else
+        return 0
+    fi 
+}
+
+plugins() { # $HOME/.local/zsh/plugins scan of .zsh plugins and source in zshrc
+    local plugins_dir="$HOME/.local/zsh/Plugins"
+    local available_plugins=("$plugins_dir"/*.zsh(N^/)) ##local available_plugins=("$plugins_dir"/*.zsh(N))##also subfolders
+    local active_plugins=()
+    while read -r line; do
+        if [[ $line == "source $plugins_dir/"* ]]; then
+        local plugin_name="${line##*/}"
+        plugin_name="${plugin_name%.zsh}"
+        active_plugins+=("$plugin_name (enabled)")
+        fi
+    done < "$HOME/.local/zsh/.zshrc"
+    for plugin_file in "${available_plugins[@]}"; do
+        local plugin_name="${plugin_file##*/}"
+        plugin_name="${plugin_name%.zsh}"
+        if ! printf '%s\n' "${active_plugins[@]}" | grep -q "^$plugin_name"; then
+        active_plugins+=("$plugin_name (disabled)")
+        fi
+    done
+    local selected_plugins=$(printf '%s\n' "${active_plugins[@]}" | fzf-splitted)
+    if [[ -n "$selected_plugins" ]]; then
+        printf '%s\n' "$selected_plugins" | while read -r plugin_str; do
+        local plugin_name="${plugin_str%% *}"
+        if [[ $plugin_str == *"(disabled)" ]]; then
+            echo "source $plugins_dir/$plugin_name.zsh" >> "$HOME/.local/zsh/.zshrc"
+        else
+            grep -v "source $plugins_dir/$plugin_name.zsh" "$HOME/.local/zsh/.zshrc" > "$HOME/.local/zsh/.zshrc.tmp" && mv -f "$HOME/.local/zsh/.zshrc.tmp" "$HOME/.local/zsh/.zshrc"
+        fi
+        done
+        clear
+        exec zsh
+    fi
+}
+
+# Alias replaced
+
+manx() { # make man displays also infopages
+    command="$1"
+    if [[ -z "$2" && "$1" != "-h" && "$1" != "--help" ]]; then
+        \man "$@"
+        if \info -w "$@" 2>/dev/null; then
+            info "$@"
+        fi 
+    else
+        \man "$@"
+    fi
+}
+
+lfx() { # makes lf enter in the current dir on enter
+    local last_dir_path=~/.last_lf_dir
+    \lf -last-dir-path="$last_dir_path" "$@"
+    [ -f "$last_dir_path" ] && export lastlfdir="$(cat "$last_dir_path")" && cd "$lastlfdir" && rm "$last_dir_path"
+}
+
+# Xorg
+
+setwm() { # Xorg initrc sed last line "exec" to be "exec '$WM'"
+    program_name="$1"
+    if [[ -z $2 ]]; then
+        xinitrc_file="/etc/X11/xinit/xinitrc"
+    else
+        xinitrc_file="$2"
+        if [[ ! -f "$xinitrc_file" ]]; then
+            cp -f /etc/X11/xinit/xinitrc "$xinitrc_file"
+        fi
+    fi
+    sudo sed -i 's/.*\(exec\).*/\1/' "$xinitrc_file"
+    sudo sed -i '/^while true; do$/d;/^done$/d' "$xinitrc_file"
+    if [[ $program_name == "dwm" ]]; then
+        if sudo sed -i "\$s|^exec.*|while true; do\n  $program_name 2> ~/.cache/.dwm.log # exec\ndone|" "$xinitrc_file"; then
+            echo "Loop logic added and last 'exec' line updated to run $program_name in $xinitrc_file"
+        else
+            echo "Failed to update $program_name in $xinitrc_file"
+        fi
+    else
+        if sudo sed -i "\$s|^exec.*|exec $program_name|" "$xinitrc_file"; then
+            echo "Last 'exec' line updated to run $program_name in $xinitrc_file"
+        else
+            echo "No 'exec' line found in $xinitrc_file"
+        fi
+    fi
+}
+
+start() { # Simply makes you can start X with start $WM like "start awesome"
+    if [[ $1 == "-h" ]]; then
+        echo -e "example-> start <wm>\n -t = temporary set wm \"not persistent\""
+        return 0
+    elif [[ -z $1 ]]; then
+        if cat /etc/X11/xinit/xinitrc | grep 'exec hyperland' ; then
+            Hyprland
+        else
+            startx
+        fi
+    else
+        if [[ $1 == "term" ]]; then
+            startx /etc/X11/xinit/xinitrcterm
+        else
+            if [[ $2 == "-t" ]]; then
+                if [[ $1 == "hyperland" ]]; then
+                    Hyprland
+                else
+                    [[ ! -f "$HOME/.local/xinit/" ]] && mkdir -p "$HOME/.local/xinit/"
+                    tmpinitrc="$HOME/.local/xinit/xinitrc$1"
+                    setwm "$1" "$tmpinitrc"
+                    startx "$tmpinitrc"
+                fi
+            else
+                if [[ $1 == "hyperland" ]]; then
+                    setwm "$1"
+                    Hyprland
+                else
+                    setwm "$1"
+                    startx
+                fi
+            fi
+        fi
+    fi
+}

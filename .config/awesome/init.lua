@@ -5,7 +5,8 @@ local awful = require("awful")
 local utils = require("lib.utils")
 local naughty = require("naughty")
 local beautiful = require("beautiful")
-beautiful.xresources.set_dpi(75)
+local xres = require("lib.utils.xres")
+beautiful.xresources.set_dpi(xres.dpi())
 naughty.config.defaults['icon_size'] = 85
 naughty.config.defaults.position = "top_right"
 naughty.config.defaults.timeout = 3
@@ -29,12 +30,6 @@ local function run_from_file(file_)
     f:close()
 end
 run_once({ "unclutter -root" })
--- Autoclose picom on max cpu usage 
---gears.timer {
---    timeout   = 5,
---    autostart = true,
---    callback  = function () awful.spawn("zsh -ci picom-cpumax") end
---}
 -- XDG autostart specification
 	--awful.spawn.with_shell(
 	--    'if (xrdb -query | grep -q "^awesome\\.started:\\s*true$"); then exit; fi;' ..

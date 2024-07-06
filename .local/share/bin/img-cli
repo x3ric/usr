@@ -1,0 +1,84 @@
+#!/bin/zsh -i
+# ImgCli utils
+imagerotate() {
+    local image_file="$1"
+    local rotate_degree=0
+    local rotate_step=90
+    local temp_file="$image_file-temp"
+    local base_name="${image_file%.*}"
+    local extension="${image_file##*.}"
+    cp "$image_file" "$temp_file"
+    while true; do
+        render "$temp_file"
+        echo "Use '+' to increase rotation, '-' to decrease rotation."
+        echo "Press 'Enter' or 'q' to save and exit."
+        read -rsk1 input
+        if [[ "$input" == "+" ]]; then
+            ((rotate_degree += rotate_step))
+            convert "$temp_file" -rotate $rotate_step "$temp_file"
+        elif [[ "$input" == "-" ]]; then
+            ((rotate_degree -= rotate_step))
+            convert "$temp_file" -rotate -$rotate_step "$temp_file"
+        elif [[ "$input" == "q" || "$input" == $'\e' ]]; then
+            cp "$temp_file" "$base_name-degree${rotate_degree}.$extension"
+            break
+        fi
+    done
+    rm -vI -f "$temp_file"
+}
+imagehue() {
+    local image_file="$1"
+    local hue_shift=0
+    local hue_step=5
+    local temp_file="temp_$image_file"
+    local base_name="${image_file%.*}"
+    local extension="${image_file##*.}"
+    while true; do
+        convert "$image_file" -modulate 100,100,$((100 + hue_shift)) "$temp_file"
+        render "$temp_file"
+        echo "Use '+' to increase hue, '-' to decrease hue."
+        echo "Press 'Enter' or 'q' to save and exit."
+        read -rsk1 input
+        case "$input" in
+            "+") ((hue_shift += hue_step)) ;;
+            "-") ((hue_shift -= hue_step)) ;;
+            $'\n' | "q" | $'\e') cp "$temp_file" "$base_name-hue${hue_shift}.$extension"; break ;;
+        esac
+    done
+    rm "$temp_file"
+}
+imageresize() {
+    if [ $# -ne 3 ]; then
+        echo "Usage: imgcli resize <input-file> <width> <height>"
+        return 1
+    fi
+    local input_file="$1"
+    local width="$2"
+    local height="$3"
+    local file_extension="${input_file##*.}"
+    local output_file="${input_file%.*}-${width}x${height}.${file_extension}"
+    local lowercase_file_extension="${file_extension,,}"
+    if [[ "${lowercase_file_extension}" =~ ^(jpg|jpeg|png)$ ]]; then
+        convert "${input_file}" -resize "${width}x${height}" "${output_file}"
+        echo "Resized ${input_file} to ${output_file}"
+    else
+        echo "Invalid file extension. Supported formats: jpg, jpeg, png"
+        return 1
+    fi
+}
+if [ "$#" -eq 0 ]; then
+    echo "Usage: imgcli <command> [<args>]"
+    echo "Commands:"
+    echo "  rotate <image_file>"
+    echo "  hue <image_file>"
+    echo "  resize <input_file> <width> <height>"
+    exit 1
+fi
+command="$1"
+shift
+case "$command" in
+    rotate) imagerotate "$@" ;;
+    hue) imagehue "$@" ;;
+    resize) imageresize "$@" ;;
+    *) echo "Unknown command: $command" ;;
+esac

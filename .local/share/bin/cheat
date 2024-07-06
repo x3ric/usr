@@ -1,0 +1,10 @@
+#!/bin/zsh -i
+# Comunity driven cheatsheet for linux commands
+for arg in "$@"; do 
+if [[ ! "$@" = /* ]]; then  
+    arg="/$@"  
+else  
+    arg="$@"  
+fi  
+curl -sS cheat.sh$arg | clearcolors | highlight -S sh | bat --style=grid,header,snip --file-name "cheat.sh$arg"
+done

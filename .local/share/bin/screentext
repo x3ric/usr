@@ -1,11 +1,20 @@
 #!/bin/python3
 # Screen text recognition
+import os
 import subprocess
 import sys
 import pytesseract
 from PIL import Image
-from io import BytesIO
 from datetime import datetime
+
+def install_dependencies():
+    try:
+        subprocess.run(["need", "python-pytesseract"], check=True)
+        subprocess.run(["need", "tesseract-data-eng"], check=True)
+        subprocess.run(["need", "xclip"], check=True)
+    except subprocess.CalledProcessError as e:
+        print(f"Failed to install packages: {e}", file=sys.stderr)
+        sys.exit(1)
 
 def capture_screen(output_dir):
     try:
@@ -33,10 +42,10 @@ def show_notification(message):
 
 def main():
     output_dir = "/tmp"
+    install_dependencies()
     image_path = capture_screen(output_dir)
     if image_path:
         ocr_and_copy_to_clipboard(image_path)
         show_notification("Text copied to clipboard")
-
 if __name__ == "__main__":
     main()

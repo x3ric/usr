@@ -1,0 +1,51 @@
+#!/bin/zsh -i
+# blackarch tools installer and repo
+if pacman -Qi blackarch-keyring &>/dev/null; then
+    echo "BlackArch keyring is already installed."
+else
+    echo "Installing BlackArch Repository..."
+    curl -O https://blackarch.org/strap.sh && {
+    chmod +x strap.sh
+    sudo ./strap.sh && echo "Repository installed."
+    rm strap.sh
+    } || {
+    echo "Failed to install the repository."
+    return 1
+    }
+fi
+case $(echo -e "Browse\nExit" | fzf-splitted --prompt "Select an option: ") in
+"Browse")
+    while true; do
+        local category=$(pacman -Sg | grep blackarch | fzf-splitted --header "Choose a category or 'Exit' to go back:" --exit-0)
+        if [[ -n $category && $category != "Exit" ]]; then
+        local submenu=$(echo -e "Install All $category\nList Tools\nGo Back" | fzf-splitted --prompt "You are in category '$category'. Choose an action: ")
+        case "$submenu" in
+            "Install All $category")
+            sudo pacman -S "$category"
+            ;;
+            "List Tools")
+            local tool=$(pacman -Sg $category | awk '{print $2}' | fzf-splitted --prompt "Select a tool to install or 'Exit' to go back: ")
+            if [[ -n $tool && $tool != "Exit" ]]; then
+                echo "Installing $tool..."
+                sudo pacman -S "$tool"
+            fi
+            ;;
+            "Go Back")
+            break
+            ;;
+            *)
+            echo "Invalid option."
+            ;;
+        esac
+        else
+        break
+        fi
+    done
+    ;;
+"Exit")
+    echo "Exiting BlackArch utility."
+    ;;
+*)
+    echo "No valid option selected."
+    ;;
+esac

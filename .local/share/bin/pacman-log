@@ -1,0 +1,52 @@
+#!/bin/zsh -i
+# Pacman logs history of installed
+usage="Usage: pacman-log [OPTIONS]\n Options:
+-i, --install    Show only install logs.
+-r, --remove     Show only remove logs.
+-m               Show in inverted order.
+-h, --help       Display this help message."
+log_file="/var/log/pacman.log"
+install_logs=""
+remove_logs=""
+order_logs=""
+if [[ ! -f "$log_file" ]]; then
+    echo "Error: pacman.log file not found at /var/log/pacman.log"
+    exit 1
+fi
+while (( $# > 0 )); do
+    case "$1" in
+    -m) order_logs="true" ;;
+    -i|--install) install_logs="installed" ;;
+    -r|--remove) remove_logs="removed" ;;
+    -ri) install_logs="installed" ; remove_logs="removed" ;;
+    -rim) install_logs="installed" ; remove_logs="removed" ; order_logs="true" ;;
+    -rm|-mr) install_logs="installed" ; remove_logs="removed" ; order_logs="true" ;;
+    -im|-mi) install_logs="installed" ; remove_logs="removed" ; order_logs="true" ;;
+    -h|--help)
+        echo -e "$usage"
+        exit 0
+        ;;
+    *)
+        echo "Error: Unknown option: $1"
+        echo -e "$usage"
+        exit 1
+        ;;
+    esac
+    shift
+done
+log_filter=""
+if [[ -n "$install_logs" && -n "$remove_logs" ]]; then
+    log_filter="grep -E '\\[(PACMAN|ALPM)\\] (installed|removed)' \"$log_file\""
+elif [[ -n "$install_logs" ]]; then
+    log_filter="grep -E '\\[(PACMAN|ALPM)\\] (installed)' \"$log_file\""
+elif [[ -n "$remove_logs" ]]; then
+    log_filter="grep -E '\\[(PACMAN|ALPM)\\] (removed)' \"$log_file\""
+else
+    echo -e "$usage"
+    exit 1
+fi
+final_cmd="$log_filter | highlight -S sh"
+if [[ -n "$order_logs" ]]; then
+    final_cmd+=" | tac"
+fi
+eval "$final_cmd | bat --plain"

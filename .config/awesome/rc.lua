@@ -316,24 +316,21 @@
 				if prev_bar_visible[screen_index] ~= screen.panel.visible then
 					for _, c in ipairs(client.get()) do
 						if c.first_tag == screen.selected_tag then
-							if not c.maximized and (c.floating or awful.tag.selected(screen).layout.name == "floating") then
+							if not (c.maximized or awful.tag.selected(screen).layout.name == "maximized") and (c.floating or awful.tag.selected(screen).layout.name == "floating") then
 								local new_geometry = c:geometry()
 								local last_position = last_positions[c] or new_geometry
-								if new_geometry.y > bar_geometry.height * 1.01 then 
-									-- makes only window touching bar resize relative
+								if new_geometry.y > bar_geometry.height * 1.01 then  -- makes only window touching bar resize relative
 									last_positions[c] = nil
 									return
 								end
-								if screen.panel.visible then
-									-- Move the window down by the bar height and reduce its height
+								if screen.panel.visible then -- Move the window down by the bar height and reduce its height
 									if new_geometry.y < bar_geometry.height then
 										new_geometry.y = bar_geometry.height
 									else
 										new_geometry.y = new_geometry.y + bar_geometry.height
 									end
 									new_geometry.height = new_geometry.height - bar_geometry.height
-								else
-									-- Move the window up by the bar height and restore its height
+								else -- Move the window up by the bar height and restore its height
 									new_geometry.y = new_geometry.y - bar_geometry.height
 									new_geometry.height = new_geometry.height + bar_geometry.height
 								end
@@ -348,7 +345,7 @@
 					prev_bar_visible[screen_index] = screen.panel.visible
 				end
 			end)
-		end		
+		end			
 	-- Desktop widgets
 		if not lock.desktop then
 			local desktop = require("desktop")

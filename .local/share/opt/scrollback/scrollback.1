@@ -1,0 +1,199 @@
+.TH scrollback 1 "Nov 28, 2020"
+
+.
+.
+.SH NAME
+
+scrollback - a scrollback buffer for Linux virtual terminals
+
+.
+.
+.
+.SH SYNOPSIS
+
+.TP 11
+.B scrollback
+[\fI-b buffersize\fP]
+[\fI-l lines\fP]
+[\fI-u\fP]
+[\fI-s\fP]
+[\fI-v\fP]
+[\fI-c\fP]
+[\fI-d level\fP]
+[\fI-h\fP]
+.br
+.I /path/to/shell
+[\fI-- shellarg...\fP]
+
+.
+.
+.
+.SH DESCRIPTION
+
+When run in a Linux virtual terminal,
+.I
+scrollback
+runs a shell with a scrollback buffer. Text scrolled out of the screen is
+shown by either \fIF11\fP or \fIShift-PageUp\fP, depending on the key
+configuration, described below. Scrolling down is done by \fIF12\fP or
+\fIShift-PageDown\fP.
+
+.
+.
+.
+.SH OPTIONS
+
+.TP
+.BI -b " buffersize
+set the size of the buffer, the number of characters it contains
+
+.TP
+.BI -l " lines
+how many lines to scroll every time; the argument can be a single integer or a
+fraction \fIa/b\fP for a fraction of lines of the screen; for example,
+\fI1/2\fP means to scroll half of the screen every time
+
+.TP
+.B
+-u
+run on a terminal that is in unicode mode;
+the default is to autodetect from the current locale
+
+.TP
+.B
+-s
+run on a terminal that is not in unicode mode;
+the default is to autodetect from the current locale
+
+.TP
+.B
+-v
+make a file descriptor of the console available to the shell and the called
+programs through the \fIVT_FILENO\fP environment variable
+
+.TP
+.B
+-c
+only check whether \fIscrollback\fP would run; it does from a
+Linux console different than \fItty6\fP and only if the environment variable
+\fISCROLLBACK\fP is not set; it does not run, for example, within itself
+
+.TP
+.B
+-k
+configure
+.I
+Shift-PageUp
+and
+.I
+Shift-PageDown
+to be used by all subsequent runs
+
+.TP
+.BI -d " level
+the debug level, the inclusive or of:
+1, to log data exchanged between the shell and the actual terminal to a file
+\fIlogescape\fP;
+2, to continuosly save the status of the scrollback buffer to a file
+\fIlogfile\fP;
+4, to debug the key assignment procedure
+
+.TP
+.B
+-h
+inline help
+
+.
+.
+.
+.SH KEYS
+
+.I
+scrollback
+uses \fIShift-PageUp\fP and \fIShift-PageDown\fP for scrolling in the buffer if
+these keys are available. This is the case when they are associated to some
+strings by \fIloadkeys(1)\fP. An easy way to do that is to call
+.I
+scrollback -k
+at startup as root. The service file \fIscrollback.service\fP allows doing
+that from \fIsystemctl(1)\fP.
+
+During scrolling, \fIF2\fP saves the whole content of the scrollback buffer to
+the file \fI/run/user/UID/scrollbackbuffer\fP where \fIUID\fP is the user ID.
+
+Searching in this file can be performed by key \fIF3\fP, which runs
+\fIless(1)\fP on it.
+
+.
+.
+.
+.SH AUTOMATIC STARTUP
+
+Running \fIscrollback\fP from a shell initialization file such as \fI.bashrc\fP
+is possible but requires some care. Since \fIscrollback\fP calls the shell
+itself, its initialization file would be processed again, resulting in an
+infinite loop of calls to \fIscrollback\fP. Also, \fIscrollback\fP is only to
+be run in a virtual terminal.
+
+These checks can be implemented in \fI.bashrc\fP as follows:
+
+.nf
+\fI
+  ! $SCROLLBACK false && \\
+  tty | grep -q '/dev/tty' && [ $(tty) != /dev/tty6 ] && \\
+  scrollback -c /bin/bash && exec scrollback /bin/bash
+\fP
+.fi
+
+The evironment variable \fISCROLLBACK\fP is set by \fIscrollback\fP itself to
+true. The first check ensures that the program will not call itself.
+
+The second check is whether the terminal is a virtual terminal and not a
+pseudoterminal. This makes \fIscrollback\fP not be called from \fIxterm(1)\fP
+or \fIscreen(1)\fP.
+
+Since the command \fIexec scrollback /bin/bash\fP makes \fIscrollback\fP
+replace the current shell (the one that is executing \fI.bashrc\fP), a failure
+would close it without running the other shell from within \fIscrollback\fP.
+
+The test \fI[ $(tty) != /dev/tty6 ]\fP is a
+fallback to make logging in always possible from the sixth virtual terminal
+(switched in by \fIControl-Alt-F6\fP).
+
+Calling \fIscrollback -c /bin/bash\fP is a test for whether \fIscrollback\fP
+would refuse to run, for example because it is not running on a Linux virtual
+terminal. It avoids the following \fIexec\fP in this case.
+
+.
+.
+.
+.SH DIRECT ACCESS TO THE VIRTUAL TERMINAL
+
+Some programs do not work in \fIscrollback\fP, for example \fIstartx\fP. Others
+do not work properly: for example, \fImpv\fP continues to play even after
+switching to a different terminal.
+
+These programs require direct access to the terminal, they cannot be run within
+a program such as \fIscrollback\fP. They can if run through the \fIvtdirect\fP
+script, like \fIvtdirect startx\fP and \fIvtdirect mpv ...\fP.
+
+The inconvenience of prepending each such command with the name of the script
+is avoided by setting aliases in the shell initialization file:
+
+.nf
+\fI
+if $SCROLLBACK false && [ "$SCROLLBACKPTS" = $(tty) ];
+then
+	alias setfont='vtdirect setfont'
+	alias startx='vtdirect startx'
+	alias mpv='vtdirect mpv'
+	alias fbv='vtdirect fbv'
+	alias hovacui='vtdirect hovacui'
+fi
+\fP
+.fi
+
+An alternative is provided by the \fIVTDIRECT\fP environment variable set by
+\fIscrollback\fP. Commands called like \fI$VTDIRECT startx\fP and \fI$VTDIRECT
+mpv ...\fP work as usual when \fIVTDIRECT\fP is undefined.
+

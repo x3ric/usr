@@ -1,5 +1,6 @@
 #!/bin/bash
 # Archx installer
+
 function checkwget {
   which wget > /dev/null 2>&1
   if [ "$?" -eq "0" ]; then
@@ -12,7 +13,7 @@ function checkwget {
     echo ""
   fi
   sleep 0.25
-  }
+}
 function checkyay {
     which yay > /dev/null 2>&1
     if [ "$?" -eq "0" ]; then
@@ -25,7 +26,7 @@ function checkyay {
   echo ""
   fi
   sleep 0.25
-  }
+}
 function checkgit {
     which git > /dev/null 2>&1
     if [ "$?" -eq "0" ]; then
@@ -38,7 +39,7 @@ function checkgit {
   echo ""
   fi
   sleep 0.25
-  }
+}
 function checkfzf {
     which fzf > /dev/null 2>&1
     if [ "$?" -eq "0" ]; then
@@ -51,7 +52,7 @@ function checkfzf {
   echo ""
   fi
   sleep 0.25
-  }
+}
 function showlogo {
   clear
   echo ""
@@ -62,7 +63,7 @@ function showlogo {
   echo "     ██║  ██║██║  ██║╚██████╗██║  ██║██╔╝ ██╗" 
   echo "     ╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝╚═╝  ╚═╝"  
   echo -e "                \e[1;37m| ArchX toolbox |\e[0m\n"               
-  }
+}
 loading_animation() {
     local pid=$1
     local pkgname=$2
@@ -82,108 +83,111 @@ loading_animation() {
     done
     printf "\r[✔] Checking %s... Done          \n" "$pkgname"
 }
-      function installsamba {
-          sudo systemctl enable smb.service
-          sudo systemctl enable nmb.service
-          echo "Cange password samba"
-          sudo smbpasswd -a $choice
-        }
-      function installremap {
-        yay -S --quiet --noconfirm --needed input-remapper-git
-        sudo systemctl restart input-remapper
-        sudo systemctl enable input-remapper
-        autostart="$HOME/.local/share/bin/autostart"
-        if ! cat "$autostart" | grep input-remapper-control ;then
-          echo -e "input-remapper-control --command autoload &\n" >> "$autostart"
-        fi
-      }
-      function installgtk3 {
-        git clone https://github.com/PCMan/gtk3-nocsd
-        cd gtk3-nocsd
-        make
-        sudo make install
-        cd ..
-        rm -rf gtk3-nocsd
-        sudo cp /usr/local/lib/libgtk3-nocsd.so.0 /usr/lib/libgtk3-nocsd.so.0
-      }
-      function installwine {
-          mkdir -p $HOME/.local/share/wineprefixes/default
-          sudo pacman -S --needed --noconfirm wine winetricks
-          echo "Change in Drives > Show dotfiles = true and in Desktop Integration > Theme = null, WinRt theme > Dark"
-          echo "and apply"
-          winecfg
-          echo "Windows Registry Editor Version 5.00
 
-          [HKEY_CURRENT_USER\Control Panel\Colors]
-          \"ActiveBorder\"=\"1 1 1\"
-          \"ActiveTitle\"=\"255 255 255\"
-          \"AppWorkSpace\"=\"1 1 1\"
-          \"Background\"=\"1 1 1\"
-          \"ButtonAlternateFace\"=\"1 1 1\"
-          \"ButtonAlternativeFace\"=\"1 1 1\"
-          \"ButtonDkShadow\"=\"1 1 1\"
-          \"ButtonFace\"=\"1 1 1\"
-          \"ButtonHilight\"=\"255 255 255\"
-          \"ButtonLight\"=\"255 255 255\"
-          \"ButtonShadow\"=\"1 1 1\"
-          \"ButtonText\"=\"255 255 255\"
-          \"GradientActiveTitle\"=\"1 1 1\"
-          \"GradientInactiveTitle\"=\"1 1 1\"
-          \"GrayText\"=\"255 255 255\"
-          \"Hilight\"=\"255 255 255\"
-          \"HilightText\"=\"1 1 1\"
-          \"HotTrackingColor\"=\"255 255 255\"
-          \"InactiveBorder\"=\"1 1 1\"
-          \"InactiveTitle\"=\"255 255 255\"
-          \"InactiveTitleText\"=\"1 1 1\"
-          \"InfoText\"=\"255 255 255\"
-          \"InfoWindow\"=\"1 1 1\"
-          \"Menu\"=\"1 1 1\"
-          \"MenuBar\"=\"1 1 1\"
-          \"MenuHilight\"=\"255 255 255\"
-          \"MenuText\"=\"255 255 255\"
-          \"Scrollbar\"=\"1 1 1\"
-          \"TitleText\"=\"255 255 255\"
-          \"Window\"=\"1 1 1\"
-          \"WindowFrame\"=\"255 255 255\"
-          \"WindowText\"=\"255 255 255\"" > temp_wine_reg.reg
-          wine regedit temp_wine_reg.reg
-          rm temp_wine_reg.reg
-          gpu_type=$(lspci)
-          if grep -E "NVIDIA|GeForce" <<< ${gpu_type}; then
-              sudo pacman -S --needed --noconfirm nvidia-dkms nvidia-utils lib32-nvidia-utils nvidia-settings vulkan-icd-loader lib32-vulkan-icd-loader
-          elif lspci | grep 'VGA' | grep -E "Radeon|AMD"; then
-              sudo pacman -S --needed --noconfirm lib32-mesa vulkan-radeon lib32-vulkan-radeon vulkan-icd-loader lib32-vulkan-icd-loader
-          elif grep -E "Integrated Graphics Controller" <<< ${gpu_type}; then
-              sudo pacman -S --needed --noconfirm lib32-mesa vulkan-intel lib32-vulkan-intel vulkan-icd-loader lib32-vulkan-icd-loader
-          elif grep -E "Intel Corporation UHD" <<< ${gpu_type}; then
-              sudo pacman -S --needed --noconfirm lib32-mesa vulkan-intel lib32-vulkan-intel vulkan-icd-loader lib32-vulkan-icd-loader
-          fi
-          yay -S --quiet --noconfirm dxvk
-          wineboot
-        }
-      function installprinters {
-          sudo pacman -S --needed --noconfirm cups
-          sudo pacman -S --needed --noconfirm cups-pdf
-          sudo pacman -S --needed --noconfirm ghostscript
-          sudo pacman -S --needed --noconfirm gsfonts
-          sudo pacman -S --needed --noconfirm gutenprint
-          sudo pacman -S --needed --noconfirm gtk3-print-backends
-          sudo pacman -S --needed --noconfirm libcups
-          sudo pacman -S --needed --noconfirm system-config-printer
-          sudo systemctl enable cups.service
-          sudo systemctl start cups.service
-        }
-      # XForks
-        function installpicom {
-            curl -s https://raw.githubusercontent.com/X3ric/picom/next/install | bash
-            if pgrep awesome > /dev/null; then
-                awesome-client "awesome.restart()" > /dev/null 2>&1
-            fi
-          }
-        function installctpv {
-            curl -s https://raw.githubusercontent.com/X3ric/ctpv/master/install | bash
-          }
+# Install Functions
+
+  function installsamba {
+    sudo systemctl enable smb.service
+    sudo systemctl enable nmb.service
+    echo "Cange password samba"
+    sudo smbpasswd -a $choice
+  }
+  function installremap {
+    yay -S --quiet --noconfirm --needed input-remapper-git
+    sudo systemctl restart input-remapper
+    sudo systemctl enable input-remapper
+    autostart="$HOME/.local/share/bin/autostart"
+    if ! cat "$autostart" | grep input-remapper-control ;then
+      echo -e "input-remapper-control --command autoload &\n" >> "$autostart"
+    fi
+  }
+  function installgtk3 {
+    git clone https://github.com/PCMan/gtk3-nocsd
+    cd gtk3-nocsd
+    make
+    sudo make install
+    cd ..
+    rm -rf gtk3-nocsd
+    sudo cp /usr/local/lib/libgtk3-nocsd.so.0 /usr/lib/libgtk3-nocsd.so.0
+  }
+  function installwine {
+    mkdir -p $HOME/.local/share/wineprefixes/default
+    sudo pacman -S --needed --noconfirm wine winetricks
+    echo "Change in Drives > Show dotfiles = true and in Desktop Integration > Theme = null, WinRt theme > Dark"
+    echo "and apply"
+    winecfg
+    echo "Windows Registry Editor Version 5.00
+
+    [HKEY_CURRENT_USER\Control Panel\Colors]
+    \"ActiveBorder\"=\"1 1 1\"
+    \"ActiveTitle\"=\"255 255 255\"
+    \"AppWorkSpace\"=\"1 1 1\"
+    \"Background\"=\"1 1 1\"
+    \"ButtonAlternateFace\"=\"1 1 1\"
+    \"ButtonAlternativeFace\"=\"1 1 1\"
+    \"ButtonDkShadow\"=\"1 1 1\"
+    \"ButtonFace\"=\"1 1 1\"
+    \"ButtonHilight\"=\"255 255 255\"
+    \"ButtonLight\"=\"255 255 255\"
+    \"ButtonShadow\"=\"1 1 1\"
+    \"ButtonText\"=\"255 255 255\"
+    \"GradientActiveTitle\"=\"1 1 1\"
+    \"GradientInactiveTitle\"=\"1 1 1\"
+    \"GrayText\"=\"255 255 255\"
+    \"Hilight\"=\"255 255 255\"
+    \"HilightText\"=\"1 1 1\"
+    \"HotTrackingColor\"=\"255 255 255\"
+    \"InactiveBorder\"=\"1 1 1\"
+    \"InactiveTitle\"=\"255 255 255\"
+    \"InactiveTitleText\"=\"1 1 1\"
+    \"InfoText\"=\"255 255 255\"
+    \"InfoWindow\"=\"1 1 1\"
+    \"Menu\"=\"1 1 1\"
+    \"MenuBar\"=\"1 1 1\"
+    \"MenuHilight\"=\"255 255 255\"
+    \"MenuText\"=\"255 255 255\"
+    \"Scrollbar\"=\"1 1 1\"
+    \"TitleText\"=\"255 255 255\"
+    \"Window\"=\"1 1 1\"
+    \"WindowFrame\"=\"255 255 255\"
+    \"WindowText\"=\"255 255 255\"" > temp_wine_reg.reg
+    wine regedit temp_wine_reg.reg
+    rm temp_wine_reg.reg
+    gpu_type=$(lspci)
+    if grep -E "NVIDIA|GeForce" <<< ${gpu_type}; then
+        sudo pacman -S --needed --noconfirm nvidia-dkms nvidia-utils lib32-nvidia-utils nvidia-settings vulkan-icd-loader lib32-vulkan-icd-loader
+    elif lspci | grep 'VGA' | grep -E "Radeon|AMD"; then
+        sudo pacman -S --needed --noconfirm lib32-mesa vulkan-radeon lib32-vulkan-radeon vulkan-icd-loader lib32-vulkan-icd-loader
+    elif grep -E "Integrated Graphics Controller" <<< ${gpu_type}; then
+        sudo pacman -S --needed --noconfirm lib32-mesa vulkan-intel lib32-vulkan-intel vulkan-icd-loader lib32-vulkan-icd-loader
+    elif grep -E "Intel Corporation UHD" <<< ${gpu_type}; then
+        sudo pacman -S --needed --noconfirm lib32-mesa vulkan-intel lib32-vulkan-intel vulkan-icd-loader lib32-vulkan-icd-loader
+    fi
+    yay -S --quiet --noconfirm dxvk
+    wineboot
+  }
+  function installprinters {
+    sudo pacman -S --needed --noconfirm cups
+    sudo pacman -S --needed --noconfirm cups-pdf
+    sudo pacman -S --needed --noconfirm ghostscript
+    sudo pacman -S --needed --noconfirm gsfonts
+    sudo pacman -S --needed --noconfirm gutenprint
+    sudo pacman -S --needed --noconfirm gtk3-print-backends
+    sudo pacman -S --needed --noconfirm libcups
+    sudo pacman -S --needed --noconfirm system-config-printer
+    sudo systemctl enable cups.service
+    sudo systemctl start cups.service
+  }
+  # XForks
+    function installpicom {
+      curl -s https://raw.githubusercontent.com/X3ric/picom/next/install | bash
+      if pgrep awesome > /dev/null; then
+          awesome-client "awesome.restart()" > /dev/null 2>&1
+      fi
+    }
+    function installctpv {
+      curl -s https://raw.githubusercontent.com/X3ric/ctpv/master/install | bash
+    }
 # ArchX
   function updates() {
     git --git-dir=$HOME/.cache/usr/.git fetch --quiet > /dev/null 2>&1
@@ -205,7 +209,7 @@ loading_animation() {
   }
   function updateconfig { # ArchX/usr 
       showlogo
-      [[ -z "$HOME/.cache/archx" ]] && mkdir -p "$HOME/.cache/archx"
+      [[ ! -d "$HOME/.cache/archx" ]] && mkdir -p "$HOME/.cache/archx"
       difffile="$HOME/.cache/archx/diffold-$(date +"%Y%m%d_%H%M%S")"
       echo -e "Warning \nThis will replace your dotfiles with my X3ric/usr \nbut save diffs in $difffile"
       read -p 'Update dotfiles? y[n]: ' dt
@@ -272,13 +276,16 @@ loading_animation() {
         sudo rm -Rf $HOME/.git/
         sudo rm -Rf $HOME/README.md
         sudo rm -Rf $HOME/LICENSE
-        echo "export ZDOTDIR=~/.config/zsh" | sudo tee /etc/zsh/zshenv
+        echo "export ZDOTDIR=~/.local/zsh" | sudo tee /etc/zsh/zshenv
         rm -rf ~/.zshenv
         papirus-folders -C blue > /dev/null 2>&1
         pgrep -x "awesome" >/dev/null && awesome-client "awesome.restart()" > /dev/null 2>&1
         [ -f "$HOME/archx" ] && sudo rm -Rf $HOME/archx
       fi
     }
+
+# Menu
+
 if [[ $1 == "updates" ]]; then
   updates-notify
   exit

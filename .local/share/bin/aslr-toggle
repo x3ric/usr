@@ -1,0 +1,30 @@
+#!/bin/bash
+# Memory addres aslr toggle
+persist_setting() {
+  local file="/etc/sysctl.d/99-custom.conf"
+  local setting="kernel.randomize_va_space=$1"
+  sudo sed -i '/kernel\.randomize_va_space/d' "$file"
+  echo "$setting" | sudo tee -a "$file" > /dev/null
+  echo "Persistent setting applied: $setting"
+}
+toggle_address_space_randomization() {
+  if [[ "$1" == "-h" || "$1" == "--help" ]]; then
+    echo "-p to make persistent"
+    exit 1
+  fi
+  local current_setting=$(sysctl -n kernel.randomize_va_space)
+  local new_setting
+  if [ "$current_setting" -eq 0 ]; then
+    echo "Enabling address space randomization..."
+    new_setting=2
+  else
+    echo "Disabling address space randomization..."
+    new_setting=0
+  fi
+  sudo sysctl -w kernel.randomize_va_space=$new_setting
+  echo "Address space randomization is now set to $new_setting."
+  if [[ "$1" == "-p" ]]; then
+    persist_setting $new_setting
+  fi
+}
+toggle_address_space_randomization $1

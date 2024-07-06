@@ -1,5 +1,6 @@
 [[ $- != *i* ]] && return
 BASH="/bin/bash"
+PATH="$PATH:/$HOME/.local/bin"
 PATH="$PATH:/$HOME/.local/share/bin"
 export ZDOTDIR=~/.config/zsh
 [ -f "$HOME/.config/zsh/envrc" ] && source "$HOME/.config/zsh/envrc"

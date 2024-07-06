@@ -19,8 +19,8 @@ fi
 if [[ -f "/usr/local/bin/ttywal-server" ]]; then
   echo "$TEMP_COLORS" > "$HOME/.cache/ttywal"
 else
-  if [[ -d "$HOME/.local/share/bin/ttywal-server" ]]; then
-    cd "$HOME/.local/share/bin/ttywal-server"
+  if [[ -d "$HOME/.local/share/opt/ttywal-server" ]]; then
+    cd "$HOME/.local/share/opt/ttywal-server"
     make install
     sleep 3
     echo "$TEMP_COLORS" > "$HOME/.cache/ttywal"

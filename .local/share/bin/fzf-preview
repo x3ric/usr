@@ -7,7 +7,7 @@ if [[ ! $type =~ image/ ]]; then
     file "$1"
     exit
   fi
-  bat --pager=never -- "$file"
+  zsh -ci 'highlight --force -i '"$file"' | bat --pager=never'
   exit
 else
   dim=${FZF_PREVIEW_COLUMNS}x${FZF_PREVIEW_LINES}

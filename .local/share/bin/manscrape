@@ -1,0 +1,22 @@
+#!/bin/bash
+# Local Man Pages Txt
+if [[ "$EUID" -ne 0 ]]; then
+    echo "Please run this script with sudo."
+    exit 1
+fi
+mkdir -p "/home/$(logname)/man"
+cd "/home/$(logname)/man"
+filename="manpagelist.csv"
+manpath=$(manpath)
+IFS=':' read -r -a paths <<< "$manpath"
+for path in "${paths[@]}"; do
+    find "$path" -type f -name '*.[0-9]*' | while read -r manpage; do
+        base=$(basename "$manpage")
+        name="${base%.*}"
+        echo "$name"
+    done
+done | sort | uniq > "$filename"
+while IFS=""; read -r manpagename; do
+	\man $manpagename > $manpagename.txt
+done < $filename
+echo "Done... Text files located in $(pwd)"

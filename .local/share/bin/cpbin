@@ -1,0 +1,26 @@
+#!/bin/bash
+# Copy binaries with deps in a folder
+if [[ "$#" -ne 2 ]]; then
+    echo "Usage: cpbin <command> <path>"
+    return 1
+fi
+target_path="$2"
+program=$(type -a "$1" | grep -o '/[^ ]*$')
+copy_to() {
+    source="$1"
+    destination="$2"
+    sudo mkdir -p "$destination"
+    echo "Coping $source to $destination"
+    sudo cp "$source" "$destination"
+}
+copy_to "$program" "$target_path/bin"
+copy_to "$program" "$target_path/usr/bin"
+echo "Finding and moving dependencies of $program..."
+while IFS= read -r dep; do
+    destination="$target_path$(dirname "$dep")"
+    copy_to "$dep" "$destination"
+done < <(ldd "$program" | awk '/=>/{print $(NF-1)}')
+sudo cp -r "$target_path/usr/lib" "$target_path/lib"
+sudo cp -r "$target_path/usr/lib64" "$target_path/lib64"
+echo "Coping operation completed successfully."
+echo -e "You can chroot in it with \"sudo chroot "$target_path"\""

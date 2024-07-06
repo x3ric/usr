@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Translate a string to a specified language without using external APIs.
+# Translate a string to a specified language with google no api needed.
 import os
 import sys
 import re

@@ -1,0 +1,60 @@
+#!/bin/zsh -i
+# FFmpeg video recorder
+if [[ $1 == "-h" || $1 == "--help" ]]; then
+	echo -e "Usage: record [-a] <screen/webcam/audio> [<webcam-number>]\n-a: record audio"
+	return 0
+fi
+need ffmpeg
+need slop
+timestamp=$(date "+%Y%m%d_%H%M%S")
+echo "Setup in pavucontrol the audio recording input."
+echo "Press Q to save and quit. Press Ctrl+C to only quit."
+if [ "$1" = "-a" ]; then
+	recordaudio=1
+	shift
+fi
+if [ "$1" = "audio" ]; then
+	if pgrep -c xinit > /dev/null; then
+		notify-send "Recording start" "in 5 seconds"
+		sleep 5
+	fi
+	ffmpeg -y -f pulse -i default -c:a flac ~/Music/$timestamp.flac
+elif [ "$1" = "webcam" ]; then
+	if pgrep -c xinit > /dev/null; then
+		notify-send "Recording start" "in 5 seconds"
+		sleep 5
+	fi
+	if [ -n "$2" ]; then
+		recordwebcam="$2"
+	else
+		recordwebcam=0
+	fi
+	if [ -z "$recordaudio" ]; then
+		ffmpeg -y -f v4l2 -i /dev/video$recordwebcam -preset ultrafast -qp 0 -y ~/Videos/$timestamp.mkv
+	else
+		ffmpeg -y -f v4l2 -i /dev/video$recordwebcam -f pulse -i default -c:v libx264 -c:a flac -preset ultrafast -qp 0 ~/Videos/$timestamp.mkv
+	fi
+else
+	if pgrep -c xinit > /dev/null; then
+		notify-send "Pick region" "and drag"
+	fi
+	resolution=$(slop -f "%wx%h")
+	if pgrep -c xinit > /dev/null; then
+		notify-send "Recording start" "in 5 seconds"
+		sleep 5
+	fi
+	if [ ! -z "$recordaudio" ]; then
+		ffmpeg -y -f x11grab -s $resolution -i $DISPLAY -f pulse -i default -preset ultrafast -qp 0 ~/Videos/$timestamp.mkv
+	else
+		ffmpeg -y -f x11grab -s $resolution -i $DISPLAY ~/Videos/$timestamp.mkv
+	fi
+fi
+if [ "$1" != "audio" ]; then
+	if pgrep -c xinit > /dev/null; then
+		notify-send "Recording finished" "Saved in ~/Videos/$timestamp.mkv"
+	fi
+else
+	if pgrep -c xinit > /dev/null; then
+		notify-send "Recording finished" "Saved in ~/Music/$timestamp.flac"
+	fi
+fi

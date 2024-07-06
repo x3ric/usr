@@ -1,0 +1,3 @@
+# reset shift-pageup and shift-pagedown control sequences
+shift keycode 104 = Scroll_Backward
+shift keycode 109 = Scroll_Forward

@@ -1,0 +1,18 @@
+#!/bin/bash
+# Need pkg
+package="$1"
+if pacman -Q "$package" &> /dev/null; then
+    #echo "$package is already installed."
+    exit 0
+fi
+if command -v yay &> /dev/null; then
+    echo "Installing $package using yay."
+    yes '' | yay --needed -S "$package"
+else
+    if command -v pacman &> /dev/null; then
+      sudo pacman --needed -Sy "$package"
+    else
+      echo "install $package with you distro pkg manager."
+    fi
+fi
+exit 0

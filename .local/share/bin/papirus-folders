@@ -115,7 +115,7 @@ declare_current_color() {
 }
 get_theme_dir() {
     local theme_name="Papirus"
-    local theme_dir="$HOME/.local/share/icons/$theme_name"
+    local theme_dir="$HOME/.icons/$theme_name"
     
     if [ -d "$theme_dir" ]; then
         printf '%s' "$theme_dir"

@@ -15,7 +15,7 @@ run blueman-applet
 run libinput-gestures-setup start
 $HOME/.local/share/bin/mpDris2 > /dev/null 2>&1 &
 sleep 5 && zsh -ci "archx updates" > /dev/null 2>&1 &
-$HOME/.local/share/bin/globalhud/appmenu.py > /dev/null 2>&1 &
+$HOME/.local/share/opt/globalhud/appmenu.py > /dev/null 2>&1 &
 run picom -b --config  $HOME/.config/picom/picom.conf
 run /usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1
 echo 'local widget = require("lib.widgets.bar"); widget.updates:update(true)' | awesome-client > /dev/null 2>&1 &

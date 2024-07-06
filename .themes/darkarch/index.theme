@@ -1,0 +1,9 @@
+[X-GNOME-Metatheme]
+Name=darkarch
+Type=X-GNOME-Metatheme
+Comment=There was only one
+Encoding=UTF-8
+GtkTheme=darkarch
+IconTheme=Papirus
+CursorTheme=cz-Hickson-Black
+CursorSize=24

@@ -1,0 +1,13 @@
+#!/bin/env bash
+# Youtube music/playlist downloader in ./Music and also thumbnails depends from yt-dlp
+need yt-dlp
+cd ~/Music
+if [ -z "$1" ]; then
+    echo "Provide a YouTube link : "
+    read -r link
+else
+    link="$1"
+fi
+echo "Downloading audio with embedded thumbnail..."
+yt-dlp --embed-thumbnail --extract-audio --audio-format mp3 --ignore-config --yes-playlist --no-part --no-warnings -o "%(title)s.%(ext)s" "$link"
+echo "Done!"

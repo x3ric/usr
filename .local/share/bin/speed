@@ -1,0 +1,14 @@
+#!/bin/zsh -i
+# Speed set tool
+if ! pacman -Q libspeedhack-git &> /dev/null; then
+    yay libspeedhack-git
+fi
+if [[ $1 == "--help" ]]; then
+    echo -e "\$1 = program and after \$@=set 0.5"
+fi
+if [[ $1 == "set" ]]; then
+    echo $2 >/tmp/speedhack_pipe 
+else
+    speedhack $@
+fi
+

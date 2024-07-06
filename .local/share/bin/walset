@@ -1,0 +1,97 @@
+#!/bin/zsh -i
+# Pywall colors and background
+usage="Usage: walset [OPTIONS]\n Options:
+    -c,              Color set.
+    -w,              Wallpaper set.
+    -wc,             Wallpaper and Color set.
+    -h, --help       Display this help message."
+e=""
+c=""
+w=""
+while (( $# > 0 )); do
+    case "$1" in
+    -e) e="1" ;;
+    -c) c="1" ;;
+    -w) w="1" ;;
+    -wc|-cw) w="1" ; c="1" ;;
+    -h|--help)
+        echo -e "$usage"
+        exit 0
+        ;;
+    *)
+        echo "Error: Unknown option: $1"
+        echo -e "$usage"
+        exit 1
+        ;;
+    esac
+    shift
+done
+theme=$(awk -F '"' '/ theme =/ {print $2}' ~/.config/awesome/rc.lua)
+theme_path="$HOME/.config/awesome/themes/$theme/theme.lua"
+wallpaper_current="$(awk -F '"' '/self\.wallpaper/ { print $2 }' "$theme_path")"
+wallpapers=("${(@f)$(find "$HOME/.config/awesome/themes/$theme/" "$HOME/Pictures/Wallpapers" -maxdepth 2 -type f -iregex '.*\.\(jpe?g\|png\)' -not -name "$(basename "$wallpaper_current")")}")
+colorset() {
+    wal -i "$wallpaper_path"
+    color_values=(
+        "colormain=$(awk 'NR==6' "$palette_path")"
+        "colorurgent=$(awk 'NR==5' "$palette_path")"
+    )
+    theme_file="$(<"$theme_path")"
+    for color in "${color_values[@]}"; do
+        color_name="${color%%=*}"
+        color_value="${color#*=}"
+        theme_file="$(echo "$theme_file" | sed -E "s/^theme\.$color_name.*$/theme.$color_name = '$color_value'/")"
+    done
+    echo "$theme_file" > "$theme_path"
+}
+if [[ ${#wallpapers[@]} -eq 0 ]]; then
+    echo "No wallpapers found in $HOME/Pictures/Wallpapers"
+    exit 1
+fi
+selection=$(printf '%s\n' "${wallpapers[@]}" | fzf-images )
+if [[ -z "$selection" ]]; then
+    echo "No wallpaper selected."
+    exit 1
+fi
+wallpaper_path="$(realpath "$selection")"
+palette_path="$HOME/.cache/wal/colors"
+if [[ -n "$c" && -n "$w" ]]; then # wallpaper selector to set walpaper and colors in awesomewm and other pywall supported
+    sudo clear
+    sed -i "s|self\.wallpaper =.*|self.wallpaper = \"$wallpaper_path\"|" "$theme_path"
+    colorset
+    pgrep swaybg >/dev/null 2>&1 && pkill swaybg && nohup $HOME/.config/hypr/bg >/dev/null 2>&1 &!
+    if pgrep -x "awesome" >/dev/null 2>&1; then
+    sleep 1 && awesome-refresh > /dev/null 2>&1
+    fi
+    papirus-folders-autocolor
+    gtkset
+    sudo chmod a+rw /etc/vconsole.conf
+    ttywal       
+    echo "Wallpaper changed to: $selection"
+    exit 0
+elif [[ -n "$c" ]]; then # wallpaper selector to set colors in awesomewm and other pywall supported
+    colorset
+    if pgrep -x "awesome" >/dev/null 2>&1; then
+    sleep 1 && awesome-refresh > /dev/null 2>&1
+    fi
+    if pgrep -x "dwm" >/dev/null 2>&1; then
+    sleep 1 && kill -TERM $(pidof dwm) > /dev/null 2>&1
+    fi
+    exit 0
+elif [[ -n "$w" ]]; then # wallpaper selector to set walpaper in awesomewm and other pywall supported
+    sed -i "s|self\.wallpaper =.*|self.wallpaper = \"$wallpaper_path\"|" "$theme_path"
+    echo "$wallpaper_path" > "$HOME/.cache/wal/wal"
+    pgrep swaybg >/dev/null 2>&1 && pkill swaybg && nohup $HOME/.config/hypr/bg >/dev/null 2>&1 &!
+    if pgrep -x "awesome" >/dev/null 2>&1; then
+    sleep 1 && awesome-refresh > /dev/null 2>&1
+    fi
+    if pgrep -x "dwm" >/dev/null 2>&1; then
+    sleep 1 && kill -TERM $(pidof dwm) > /dev/null 2>&1
+    fi
+    echo "Wallpaper changed to: $selection"
+    exit 0
+else
+    echo "Error: No options specified. Use -h or --help for usage."
+    echo -e "$usage"
+    exit 1
+fi

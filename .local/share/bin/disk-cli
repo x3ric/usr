@@ -1,0 +1,109 @@
+#!/bin/zsh -i
+# DiskCli utils
+diskdump() { # Dump an image of a disk
+    if [ "$#" -ne 1 ]; then
+        echo "Usage: diskcli diskdump <OUTPUT_IMAGE_PATH>"
+        return 1
+    fi
+    local output_image_path=$1
+    local sd_card_device=$(lsblk -npo NAME,TYPE | awk '$2=="disk" {print $1}' | fzf-splitted --prompt="Select the disk to dump: ")
+    if [[ -z $sd_card_device || ! -b "$sd_card_device" ]]; then
+        echo "Invalid disk selection. Aborting."
+        return 1
+    fi
+    read -q "REPLY?Are you sure you want to create an image from $sd_card_device? This may take some time. (y/n) "
+    echo
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        echo "Creating disk image from $sd_card_device to $output_image_path..."
+        sudo dd if="$sd_card_device" of="$output_image_path" bs=4M status=progress
+        echo "Disk image created successfully."
+    else
+        echo "Operation cancelled."
+        return 1
+    fi
+}
+diskburn() { # Burn an image to a disk
+    if [[ $# -ne 1 || ! -f $1 ]]; then
+        echo "Usage: diskcli diskburn <path_to_disk_file>"
+        return 1
+    fi
+    local image_file="$1"
+    local device=$(lsblk -npo NAME,TYPE | awk '$2=="disk" {print $1}' | fzf-splitted --prompt="Select a disk to burn the image to: ")
+    if [[ -z $device || ! -b "$device" ]]; then
+        echo "Invalid device selection. Aborting."
+        return 1
+    fi
+    if mount | grep -q "$device"; then
+        echo "Unmounting $device..."
+        sudo umount "$device"
+    fi
+    echo "Burning the image $image_file to $device..."
+    sudo dd bs=4M if="$image_file" of="$device" status=progress oflag=sync
+    echo "Ejecting $device..."
+    sudo eject "$device"
+    echo "Disk burning completed successfully."
+}
+diskfix() { # Fixes disk partition errors like unmountable disks
+    local devices=($(lsblk -npo NAME,TYPE | awk '$2=="disk" {print $1}'))
+    if [[ ${#devices[@]} -eq 0 ]]; then
+        echo "No disks found. Aborting."
+        return 1
+    fi
+    local device=$(echo "${devices[@]}" | tr ' ' '\n' | fzf-splitted --prompt="Select a disk to fix: ")
+    if [[ -z $device || ! -b "$device" ]]; then
+        echo "Invalid device selection. Aborting."
+        return 1
+    fi
+    echo "Checking and repairing the file system on $device..."
+    sudo fsck -f -y "$device"
+    echo "Disk fixing completed successfully."
+}
+diskformat() { # Format disks utility
+    local default_fs_type="ext4"
+    local devices=($(lsblk -npo NAME,TYPE | awk '$2=="disk" {print $1}'))
+    if [[ ${#devices[@]} -eq 0 ]]; then
+        echo "No disks found. Aborting."
+        return 1
+    fi
+    local device=$(echo "${devices[@]}" | tr ' ' '\n' | fzf-splitted --prompt="Select a disk to format: ")
+    if [[ -z $device || ! -b "$device" ]]; then
+        echo "Invalid device selection. Aborting."
+        return 1
+    fi
+    if mountpoint -q "$device"; then
+        echo "Unmounting $device..."
+        sudo umount "$device"
+        if [[ $? -ne 0 ]]; then
+            echo "Unmounting failed. Aborting."
+            return 1
+        fi
+    fi
+    local fs_type="${1:-$default_fs_type}"
+    echo "Formatting $device with $fs_type..."
+    sudo mkfs -t "$fs_type" "$device"
+    if [[ $? -eq 0 ]]; then
+        echo "Disk formatting completed successfully."
+        return 0
+    else
+        echo "Disk formatting failed. Please check the disk and try again."
+        return 1
+    fi
+}
+if [ "$#" -eq 0 ]; then
+    echo "Usage: diskcli <command> [<args>]"
+    echo "Commands:"
+    echo "  dump <OUTPUT_IMAGE_PATH>"
+    echo "  burn <path_to_disk_file>"
+    echo "  fix"
+    echo "  format [<fs_type>]"
+    exit 1
+fi
+command="$1"
+shift
+case "$command" in
+    dump) diskdump "$@" ;;
+    burn) diskburn "$@" ;;
+    fix) diskfix "$@" ;;
+    format) diskformat "$@" ;;
+    *) echo "Unknown command: $command" ;;
+esac

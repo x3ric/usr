@@ -1,0 +1,10 @@
+#!/bin/bash
+# Gtk accent color set for darkarch
+COLORS=($(cat ~/.cache/wal/colors))
+I=3
+if [ -n "${COLORS[$I]}}" ]; then
+    echo "Accent color of gtk darkarch changed to ${COLORS[$I]}"
+    sed -i "s/@define-color accent #[^;]*;/@define-color accent ${COLORS[$I]};/g" $HOME/.themes/darkarch/gtk-3.0/gtk.css
+else
+    echo "No color $I found in colors-kitty.conf"
+fi

@@ -1,0 +1,23 @@
+# Enable 16 colors
+e scr.color=1
+# Show disassembly in a more readable format
+e asm.syntax=att
+e asm.bytes=true
+e asm.lines=true
+e asm.cmt.right=true
+# Enable automatic analysis on loading
+e anal.autoname=true
+e anal.bb.maxsize=1024
+e anal.hasnext=true
+# Enable basic information at the top of the screen
+e scr.utf8=true
+# Set the default analysis depth
+e anal.depth=20
+# Set the function analysis hinting
+e anal.hasnext=true
+# Set the file caching for better performance
+e io.cache=true
+e io.va=true
+# Enable debugging features
+e dbg.bpinmaps=true
+

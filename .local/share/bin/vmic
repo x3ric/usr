@@ -1,0 +1,11 @@
+#!/bin/zsh -i
+# Virtual mic toggle
+if pactl list modules | grep -q "virtual_mic" ;then
+    pactl unload-module module-remap-source NUL
+    pactl unload-module module-null-sink NUL
+    echo "VirtualMic unloaded."
+else
+    pactl load-module module-null-sink sink_name=virtual_mic NUL
+    pactl load-module module-remap-source master=virtual_mic.monitor source_name=virtual_mic NUL
+    echo "VirtalMic loaded."
+fi

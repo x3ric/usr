@@ -1,0 +1,7 @@
+#!/bin/env bash
+# Get ip of a website
+if [[ -z $1 ]]; then
+  echo "usage --> ipofsite kernel.org"
+else
+  ping -c 1 "$1" | grep PING | cut -d " " -f 3 | sed 's/[()]//g'
+fi

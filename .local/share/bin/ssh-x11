@@ -1,0 +1,50 @@
+#!/bin/bash
+# Local Xorg server toggle for ssh-server
+XSERVERRC="/etc/X11/xinit/xserverrc"
+SSHD_CONFIG="/etc/ssh/sshd_config"
+
+toggle_xorg_tcp_listen() {
+    if sudo grep -- "-nolisten" "$XSERVERRC" &> /dev/null; then
+        sudo sed -i 's/-nolisten/-listen/g' "$XSERVERRC"
+        echo "Xorg server TCP listening enabled." 
+    else
+        sudo sed -i 's/-listen/-nolisten/g' "$XSERVERRC"
+        echo "Xorg server TCP listening disabled."
+    fi
+}
+
+toggle_x11_forwarding() {
+    if sudo grep -q "^#AllowAgentForwarding" "$SSHD_CONFIG"; then
+        sudo sed -i "s/^#AllowAgentForwarding.*/AllowAgentForwarding yes/" "$SSHD_CONFIG"
+        sudo sed -i "s/^#AllowTcpForwarding.*/AllowTcpForwarding yes/" "$SSHD_CONFIG"
+        sudo sed -i "s/^#X11Forwarding.*/X11Forwarding yes/" "$SSHD_CONFIG"
+        sudo sed -i "s/^#X11DisplayOffset.*/X11DisplayOffset 10/" "$SSHD_CONFIG"
+        sudo sed -i "s/^#X11UseLocalhost.*/X11UseLocalhost no/" "$SSHD_CONFIG"
+        echo "X11 forwarding enabled in sshd_config."
+    else
+        sudo sed -i "s/^AllowAgentForwarding.*/#AllowAgentForwarding/" "$SSHD_CONFIG"
+        sudo sed -i "s/^AllowTcpForwarding.*/#AllowTcpForwarding/" "$SSHD_CONFIG"
+        sudo sed -i "s/^X11Forwarding.*/#X11Forwarding/" "$SSHD_CONFIG"
+        sudo sed -i "s/^X11DisplayOffset.*/#X11DisplayOffset/" "$SSHD_CONFIG"
+        sudo sed -i "s/^X11UseLocalhost.*/#X11UseLocalhost/" "$SSHD_CONFIG"
+        echo "X11 forwarding disabled in sshd_config."
+    fi
+}
+
+toggle_xorg_tcp_listen
+toggle_x11_forwarding
+
+if sudo systemctl is-active --quiet sshd.service; then
+    if [[ $? -eq 0 ]]; then
+        sudo systemctl restart sshd.service
+        echo "SSH server restarted."
+    else
+        echo "No changes made."
+    fi
+else
+    echo "Now run 'ssh-server' to toggle the SSH server."
+fi
+
+echo "Connect to it from the client with 'ssh -X user@ip'."
+echo "To start a window manager, use 'startxephyr awesome'."
+echo "For running individual applications, simply execute the app."

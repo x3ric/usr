@@ -1,8 +1,6 @@
 #!/bin/bash
 # Arch Linux kernel configuration and reinstall
-if ! pacman -Q git &> /dev/null; then
-    sudo pacman -Sy --needed --noconfirm git
-fi
+need git
 DIRLX="$HOME/.local/mkarch"
 clone() {
     mkdir "$DIRLX" 2> /dev/null 

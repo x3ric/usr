@@ -1,0 +1,33 @@
+#!/bin/bash
+#
+# run a program directly on the virtual terminal
+
+[ $# -lt 1 ] && echo "program to run missing" && exit 1
+
+if ! $SCROLLBACK false || ! [ "$SCROLLBACKPTS" == "$(tty)" ];
+then
+	exec "${@}"
+	exit 1
+fi
+
+SCRIPT=$HOME/.scrollback.$SCROLLBACKNO
+
+cat /dev/null					>  $SCRIPT
+export -p					>> $SCRIPT
+echo 'unset VTDIRECT'				>> $SCRIPT
+echo "cd \"$(pwd)\""				>> $SCRIPT
+echo -n "$1"					>> $SCRIPT
+while [ $# -ge 2 ];
+do
+	echo -n -- "$2" | sed "
+		s,','\"'\"',g
+		s,^-- , ',
+		s,$,',
+	"					>> $SCRIPT
+	shift 1
+done
+echo						>> $SCRIPT
+
+sleep infinity &
+echo -en "\033[0;$!v"
+wait

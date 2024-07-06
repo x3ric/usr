@@ -1,0 +1,17 @@
+#!/bin/zsh
+# adb shell connection 
+need adb-sync-git
+if [ "$1" ]; then
+    adb connect "$1"
+    adb -s "$1" shell
+    adb disconnect "$1"
+else
+    devices=$(adb devices | awk '/device$/{print $1}')
+    if [ -z "$devices" ]; then
+        echo "No devices found."
+        return 1
+    fi
+    for device in $devices; do
+        adb -s "$device" shell
+    done
+fi

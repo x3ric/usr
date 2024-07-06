@@ -1,0 +1,24 @@
+#!/bin/zsh -i
+# Avr boards flasher
+need arduino-cli
+need arduino-ide
+local input=$(arduino-cli board search | sed '1d' | fzf-splitted --prompt='Select Board > ' | awk '{print $(NF-1)}')
+if [[ ! -f "./*.ino"  ]]; then
+    if [[ ! -z "$1" ]]; then
+        local project="$1"
+    else
+        local project=$(echo -e "[Examples]\n$(find $HOME/Arduino/ -type d -not -path "$HOME/Arduino/libraries*" -not -path "$HOME/Arduino/")" | fzf-splitted --prompt='Select Sketch > ')
+        if [[ "$project" == "[Examples]" ]]; then
+            project=$(find $HOME/.arduino15/packages/ -type f -iregex '.*\.ino' -o -path "$HOME/Arduino/libraries/*" -type f -iregex '.*\.ino' | fzf --prompt='Select Example > ' --preview-window=up:80% --preview "fzf-preview {}")
+        fi
+    fi
+fi
+serial_ports=($(find /dev -type c \( -name 'ttyUSB*' -o -name 'ttyACM*' \)))
+if [[ ${#serial_ports[@]} -eq 1 ]]; then
+    serial_port="-p ${serial_ports[@]} "
+elif [[ ${#serial_ports[@]} -gt 1 ]]; then
+    chosen_port=$(printf "%s\n" "${serial_ports[@]}" | fzf-splitted --prompt='Select Serial Port > ')
+    serial_port="-p $chosen_port"
+fi
+zsh -ci "arduino-cli compile $project $serial_port -b $input"
+zsh -ci "arduino-cli upload $project $serial_port -b $input"

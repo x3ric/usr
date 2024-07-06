@@ -1,0 +1,15 @@
+#!/bin/zsh -i
+# Search in ~/.config/awesome/themes for themes and set "chosen_theme ="$THEME"" in ~/.config/awesome/rc.lua
+themes=($(ls ~/.config/awesome/themes))
+chosen_theme=$(awk -F '"' '/ theme =/ {print $2}' ~/.config/awesome/rc.lua)
+theme=$(printf '%s\n' "${themes[@]}" | grep -vx "$chosen_theme" | fzf-splitted)
+if [[ -n "$theme" ]]; then
+    theme_path="$HOME/.config/awesome/themes/$theme/theme.lua"
+    if [[ -f "$theme_path" ]]; then
+    awk -i inplace -v t="$theme" '/ theme =/ {gsub(/"[^"]+"/, "\""t"\"")} 1' ~/.config/awesome/rc.lua
+    echo "Theme changed to '$theme'"
+    sleep 1 && awesome-client 'awesome.restart()' > /dev/null 2>&1
+    else
+    echo "Invalid theme: '$theme'"
+    fi
+fi

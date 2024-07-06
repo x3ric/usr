@@ -1,0 +1,28 @@
+#!/bin/env bash
+# Toggle systemd autologin for the currend user in tty1
+if [[ "$1" == "info" ]]; then
+    tty_number="1"
+    service_file="/etc/systemd/system/getty@tty${tty_number}.service.d/autologin.conf"
+    if [[ -f "$service_file" ]]; then
+        echo "Auto-login enabled"
+    else
+        echo "Auto-login disabled"
+    fi
+else
+    tty_number="1"
+    service_dir="/etc/systemd/system/getty@tty${tty_number}.service.d"
+    service_file="$service_dir/autologin.conf"
+    current_user=$(whoami)
+    if [[ -f "$service_file" ]]; then
+        sudo rm "$service_file" && \
+        sudo systemctl daemon-reload && \
+        echo "Auto-login disabled for tty${tty_number}"
+    else
+        if [[ ! -d "$service_dir" ]]; then
+            sudo mkdir -p "$service_dir"
+        fi
+        echo -e "[Service]\nExecStart=\nExecStart=-/sbin/agetty --autologin $current_user --noclear %I \$TERM" | sudo tee "$service_file" > /dev/null
+        sudo systemctl daemon-reload && \
+        echo "Auto-login enabled for tty${tty_number} with user $current_user"
+    fi
+fi

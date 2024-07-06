@@ -1,0 +1,31 @@
+#!/bin/zsh -i
+# TTY font selector
+if [ -z $1 ]; then
+    ttywal -f
+    fonts=($(ls /usr/share/kbd/consolefonts/))
+    selected_font=$(echo "${fonts[@]}" | tr ' ' '\n' | fzf)
+else
+    selected_font=$1
+fi
+envrc_file="$HOME/.local/zsh/envrc"
+selected_font="${selected_font%%.*}"
+if grep -q "export TTYFONT=" "$envrc_file"; then
+    sed -i "/export TTYFONT=/c\export TTYFONT=\"$selected_font\"" "$envrc_file"
+else
+    echo "export TTYFONT=\"$selected_font\"" >> "$envrc_file"
+fi
+if [ -n "$selected_font" ]; then
+    if grep -q "FONT=" /etc/vconsole.conf; then
+        sed -i "/^FONT=/d" /etc/vconsole.conf
+    fi
+    echo "FONT=$selected_font" | tee -a /etc/vconsole.conf > /dev/null 2>&1
+    setfont /usr/share/kbd/consolefonts/$selected_font > /dev/null 2>&1
+    #echo "Console font set to: $selected_font"
+else
+    echo "No font selected."
+fi
+keymap=$(localectl status | grep "Layout" | awk '{print $3}')
+echo -e "KEYMAP=$keymap\nXKBLAYOUT=$keymap\nXKBMODEL=pc105\nXKBOPTIONS=terminate:ctrl_alt_bksp" | tee -a /etc/vconsole.conf > /dev/null
+if [ -z $1 ]; then
+    sudo mkinitcpio -p linux
+fi
