@@ -1,7 +1,7 @@
 #!/bin/bash
 # Archx installer
 
-function checkwget {
+checkwget() {
   which wget > /dev/null 2>&1
   if [ "$?" -eq "0" ]; then
     echo [✔]::[wget]: installation found!;
@@ -14,7 +14,8 @@ function checkwget {
   fi
   sleep 0.25
 }
-function checkyay {
+
+checkyay() {
     which yay > /dev/null 2>&1
     if [ "$?" -eq "0" ]; then
     echo [✔]::[Yay]: installation found!;
@@ -27,7 +28,8 @@ function checkyay {
   fi
   sleep 0.25
 }
-function checkgit {
+
+checkgit() {
     which git > /dev/null 2>&1
     if [ "$?" -eq "0" ]; then
     echo [✔]::[Git]: installation found!;
@@ -40,7 +42,8 @@ function checkgit {
   fi
   sleep 0.25
 }
-function checkfzf {
+
+checkfzf() {
     which fzf > /dev/null 2>&1
     if [ "$?" -eq "0" ]; then
     echo [✔]::[Fzf]: installation found!;
@@ -53,7 +56,8 @@ function checkfzf {
   fi
   sleep 0.25
 }
-function showlogo {
+
+showlogo() {
   clear
   echo ""
   echo "      █████╗ ██████╗  ██████╗██╗  ██╗██╗  ██╗"
@@ -64,6 +68,7 @@ function showlogo {
   echo "     ╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝╚═╝  ╚═╝"  
   echo -e "                \e[1;37m| ArchX toolbox |\e[0m\n"               
 }
+
 loading_animation() {
     local pid=$1
     local pkgname=$2
@@ -112,7 +117,8 @@ loading_animation() {
   }
   function installwine {
     mkdir -p $HOME/.local/share/wineprefixes/default
-    sudo pacman -S --needed --noconfirm wine winetricks
+    command -V yay >/dev/null 2>&1 && yes "" | yay -Sy dxvk-bin
+    sudo pacman -S --needed --noconfirm wine winetricks wine-mono
     echo "Change in Drives > Show dotfiles = true and in Desktop Integration > Theme = null, WinRt theme > Dark"
     echo "and apply"
     winecfg
@@ -233,8 +239,10 @@ loading_animation() {
             loading_animation $! "$package"
         done < <(curl -s https://raw.githubusercontent.com/X3ric/ArchX/master/pkg-files/aur-pkgs.txt | sed '/--END OF MINIMAL INSTALL--/d')
         echo "[✔]::[Deps]: all packages checked and installed successfully!"
-        if ! pacman -Qs picom-x > /dev/null; then
-            installpicom
+        if [ -f "$HOME/.local/share/bin/archx" ]; then
+          if ! pacman -Qs picom-x > /dev/null; then
+              echo -e "To install my picom do -> archx > install > apps > picom"
+          fi
         fi
         if ! pacman -Qs ctpv-x > /dev/null; then
             installctpv
