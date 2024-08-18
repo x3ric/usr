@@ -117,7 +117,8 @@ loading_animation() {
   }
   function installwine {
     mkdir -p $HOME/.local/share/wineprefixes/default
-    sudo pacman -S --needed --noconfirm wine winetricks
+    command -V yay >/dev/null 2>&1 && yes "" | yay -Sy dxvk-bin
+    sudo pacman -S --needed --noconfirm wine winetricks wine-mono
     echo "Change in Drives > Show dotfiles = true and in Desktop Integration > Theme = null, WinRt theme > Dark"
     echo "and apply"
     winecfg
