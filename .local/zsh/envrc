@@ -14,6 +14,7 @@ export LC_CTYPE="en_US.UTF-8"
 export LANG=en_US.UTF-8
 export LANGUAGE=en_US.UTF-8
 export QT_QPA_PLATFORMTHEME="qt5ct"
+export QT_STYLE_OVERRIDE=kvantum
 export GTK_THEME=darkarch
 export GTK_MODULES=appmenu-gtk-module
 export XDG_CONFIG_HOME="$HOME/.config"
