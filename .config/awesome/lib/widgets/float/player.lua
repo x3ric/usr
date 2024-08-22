@@ -256,23 +256,42 @@ function player:initialize_info()
 	)
 end
 function player:action(args)
-	if args == "Stop" then
-        awful.spawn.with_shell("mpc stop")
-    elseif args == "Shuffle" then
-        awful.spawn.with_shell("mpc random")
-    elseif args == "LoopStatus" then
-        awful.spawn.with_shell("mpc repeat")
+    local is_firefox_playing = io.popen("playerctl -p firefox status | grep -q 'Playing' && echo 'true' || echo 'false'"):read("*all"):gsub("%s+", "") == "true"
+    if not is_firefox_playing then
+        if args == "Stop" then
+            awful.spawn.with_shell("mpc stop")
+        elseif args == "Shuffle" then
+            awful.spawn.with_shell("mpc random")
+        elseif args == "LoopStatus" then
+            awful.spawn.with_shell("mpc repeat")
+        elseif args == "PlayPause" then
+            awful.spawn.with_shell("mpc toggle")
+        elseif args == "Next" then
+            awful.spawn.with_shell("mpc next")
+        elseif args == "Previous" then
+            awful.spawn.with_shell("mpc prev")
+        end
     else
-	  if args == "Next" or args == "Previous" then
-		awesome.emit_signal("track_changed")
-	  end
-      if not awful.util.table.hasitem(self._actions, args) then return end
-      if not self.wibox then self:init() end
-      local dbus_command = self.command.action .. args
-      print("Sending D-Bus command:", dbus_command)
-      awful.spawn.with_shell(dbus_command)
-      self:update()
-    end    
+        if args == "Stop" then
+            awful.spawn.with_shell("playerctl -p firefox stop")
+        elseif args == "Shuffle" then
+            awful.spawn.with_shell("playerctl -p firefox shuffle")
+        elseif args == "LoopStatus" then
+            awful.spawn.with_shell("playerctl -p firefox loop")
+        elseif args == "PlayPause" then
+            awful.spawn.with_shell("playerctl -p firefox play-pause")
+        elseif args == "Next" then
+            awful.spawn.with_shell("playerctl -p firefox next")
+        elseif args == "Previous" then
+            awful.spawn.with_shell("playerctl -p firefox previous")
+        end
+        if args == "Next" or args == "Previous" then
+            awesome.emit_signal("track_changed")
+        end
+        if not awful.util.table.hasitem(self._actions, args) then return end
+        if not self.wibox then self:init() end
+        self:update()
+    end
 end
 function player:change_volume(step)
 	local v = (self.last.volume or 0) + step

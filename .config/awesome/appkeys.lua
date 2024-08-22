@@ -33,7 +33,7 @@ appkeys["kitty"] = {
 appkeys["tmux"] = {
     style = command,
     pack = {
-        { { "Ctrl" , "" }, "s", nil, { description = "show all sessions", group = "tmux sessions" }},
+        { { "Ctrl" , "space" }, "s", nil, { description = "show all sessions", group = "tmux sessions" }},
         { { "Ctrl" , "space" }, "$", nil, { description = "rename the current session", group = "tmux sessions" }},
         { { "Ctrl" , "space" }, "(", nil, { description = "move to previous session", group = "tmux sessions" }},
         { { "Ctrl" , "space" }, ")", nil, { description = "move to next session", group = "tmuspace sessions" }},
@@ -42,8 +42,11 @@ appkeys["tmux"] = {
         { { "Ctrl" , "space" }, "f", nil, { description = "find window", group = "tmux windows" }},
         { { "Ctrl" , "space" }, ",", nil, { description = "rename current window", group = "tmux windows" }},
         { { "Ctrl" , "space" }, "&", nil, { description = "close current window", group = "tmux windows" }},
+        { { "Ctrl" , "space" }, "l", nil, { description = "log all windows in a file", group = "tmux windows" }},
         { { "Ctrl" , "space" }, "p", nil, { description = "previous window", group = "tmux windows" }},
         { { "Ctrl" , "space" }, "n", nil, { description = "next window", group = "tmux windows" }},
+        { { "Ctrl" , "space" }, "j", nil, { description = "join window", group = "tmux windows" }},
+        { { "Ctrl" , "space" }, "s", nil, { description = "send window", group = "tmux windows" }},
         { { "Ctrl" , "space" }, "0...9", nil, { description = "select window by number", group = "tmux windows" }},
         { { "Ctrl" , "space" }, ";", nil, { description = "toggle last active pane", group = "tmux panes" }},
         { { "Ctrl" , "space" }, "%", nil, { description = "split pane vertically", group = "tmux panes" }},
