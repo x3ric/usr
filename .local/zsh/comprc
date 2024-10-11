@@ -70,7 +70,7 @@ _explain() { # Autocompletion for explain functions
         all_commands+=("${aliasrc_aliases[@]}")
     fi
     if [[ -d "$HOME/.local/share/bin" ]]; then
-        all_commands+=($(find "$HOME/.local/share/bin" -maxdepth 1 -type f -exec basename {} \;&&find "$HOME/.local/zsh/Internal/scripts/bin" -maxdepth 1 -type f -exec basename {} \;&&find "$HOME/Private/.local/bin" -maxdepth 1 -type f -exec basename {} \;))
+        all_commands+=($(find "$HOME/.local/share/bin" -maxdepth 1 -type f -exec basename {} \;&&find "$HOME/.local/zsh/Internal/scripts/bin" -maxdepth 2 -type f -exec basename {} \;&&find "$HOME/Private/.local/bin" -maxdepth 1 -type f -exec basename {} \;))
     fi
     all_commands=($(echo "${all_commands[@]}" | sort -u))
     _arguments "1: :(${all_commands[*]})"
