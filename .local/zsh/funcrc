@@ -51,6 +51,34 @@ fzf-splitted() { # fzf splitted view adaptation for tmux
     fi 
 }
 
+bookmark() { # Bookmarks menu select marks
+    CacheFile="${XDG_CACHE_HOME:-$HOME/.cache}/bookmarks.cache"
+    if [[ $1 == "list" ]]; then
+        current_user=$(whoami)
+        sed -i "s|\$HOME|/home/$(whoami)|g" "$HOME/.cache/bookmarks.cache"
+        selected=$(sed "s|^$HOME|/home/$current_user|g" "$CacheFile" | fzf-splitted)
+        if [ -n "$selected" ]; then
+            if [ -d "$selected" ]; then
+                cd "$selected" || return
+            else
+                xdg-open "$selected"
+            fi
+        fi
+    else
+        if [ -z "$@" ]; then
+            path=$(pwd)
+        else
+            path=$1
+        fi
+        if [ -e "$path" ]; then
+            echo -e "$path\n" >> "$CacheFile"
+            echo "Added '$path' to bookmarks."
+        else
+            echo "Error: '$path' does not exist."
+        fi
+    fi
+}
+
 # Python
 
 pyenv() {
