@@ -280,7 +280,7 @@
 					end
 		)
 		-- Bar hider
-		local barhide = true
+		local barhide = false
 		if barhide then
 			local hide_timeout = 0.35
 			local prev_bar_visible = {}
