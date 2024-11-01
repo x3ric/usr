@@ -1,1 +1,7 @@
-source ~/.config/gdb/gef.py
+python
+import os
+if os.path.isfile("/usr/share/pwndbg/gdbinit.py"):
+    gdb.execute("source /usr/share/pwndbg/gdbinit.py")
+else:
+    gdb.execute("source ~/.config/gdb/gef.py")
+end
