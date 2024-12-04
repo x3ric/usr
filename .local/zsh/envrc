@@ -1,7 +1,7 @@
 export PATH="$PATH:/$HOME/.local/share/bin"
 export PATH="$PATH:/$HOME/.config/emacs/bin"
-export PATH="$PATH:/home/e/.local/share/gem/ruby/3.0.0/bin"
-export PATH="$PATH:/home/e/.local/bin"
+export PATH="$PATH:$HOME/.local/share/gem/ruby/$(\ls "$HOME/.local/share/gem/ruby/" | tail -n 1)/bin"
+export PATH="$PATH:$HOME/.local/bin"
 export PATH="$PATH:$HOME/.local/share/go/bin"
 export LAYOUT="setxkbmap -query | awk '/layout:/ {print $2}'"
 export HISTSIZE=10000
