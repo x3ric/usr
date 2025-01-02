@@ -1,3 +1,16 @@
 #!/bin/bash
 # Rofi hud of globalhud alt+\
-$HOME/.local/share/opt/globalhud/command.py
+need python-fuzzysearch
+need appmenu-gtk-module
+need libdbusmenu-qt4
+need libdbusmenu-qt5
+need libdbusmenu-gtk2
+need libdbusmenu-gtk3 
+need gtk3 
+need bamf
+need python
+need python-gobject
+need python-dbus
+need rofi
+chmod -R +x ./.local/share/opt/globalhud/
+PYTHONPATH=/usr/lib/python3.12/site-packages/:$PYTHONPATH python $HOME/.local/share/opt/globalhud/command.py
