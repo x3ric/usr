@@ -15,9 +15,9 @@ run blueman-applet
 run libinput-gestures-setup start
 $HOME/.local/share/bin/mpDris2 > /dev/null 2>&1 &
 sleep 5 && zsh -ci "archx updates" > /dev/null 2>&1 &
-$HOME/.local/share/opt/globalhud/appmenu.py > /dev/null 2>&1 &
 run picom -b --config  $HOME/.config/picom/picom.conf
 run /usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1
 echo 'local widget = require("lib.widgets.bar"); widget.updates:update(true)' | awesome-client > /dev/null 2>&1 &
 command -v input-remapper-control && input-remapper-control --command autoload &
+PYTHONPATH=/usr/lib/python3.12/site-packages/:$PYTHONPATH python $HOME/.local/share/opt/globalhud/appmenu.py > /dev/null 2>&1 &
 wal -i $(awk -F '"' '/self\.wallpaper/ { print $2 }' "$HOME/.config/awesome/themes/$(awk -F '"' '/ theme =/ {print $2}' ~/.config/awesome/rc.lua)/theme.lua") > /dev/null 2>&1 &
