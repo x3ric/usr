@@ -1,7 +1,7 @@
 @theme "~/.config/rofi/color.rasi"
 
 * {
-    font:                           "JetBrainsMonoMedium Nerd Font 10";
+    font:                           "OCRA 10";
     background-color: transparent;
     text-color:       @foreground;
     padding:          0px;
@@ -24,23 +24,32 @@ mainbox {
 prompt { enabled: false; }
 
 textbox-prompt-colon {
-	expand: 						false;
-	str: 							"";
-    padding:                        10px 0px 0px 12px;
-	font:							"Material Icons Round 16";
+    expand: false;
+    str: "";
+    text-color: @foreground;
+    font: "Material Icons Round 16";
+    padding: 0px;
+    background-color: rgba(0, 0, 0, 0.0);
+    size: 10px;
+    width: 24px;
+    height: 24px;
+    horizontal-align: 0.5;
+    vertical-align: 0.5;
 }
 
 entry {
+    text-color:                     @foreground;
     placeholder-color:              @foreground;
     expand:                         true;
+    horizontal-align:               0;
     placeholder:                    "Type here to search";
     blink:                          true;
-    padding:           10px 0px 0px 50px;
+    padding:                        10px;
 }
 
 inputbar {
-	children: 						[ prompt, entry ,textbox-prompt-colon ];
-    background-color: @background;
+	children: 						[ textbox-prompt-colon, entry ];
+    background-color:               @background;
     spacing:                        0px;
     expand:                         false;
     border-radius:                  8px;
