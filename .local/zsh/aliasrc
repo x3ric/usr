@@ -113,13 +113,13 @@
   # enables top menu but alt+\ "global hud" not work in it
   alias globalhud-disable='UBUNTU_MENUPROXY=0'
 # Fixes for gtk3-nocsd-git
-  if command -v wine &>/dev/null 2>&1 ;then
-  alias libclear='LD_PRELOAD=$(echo "$LD_PRELOAD" | sed 's@/usr/lib/libgtk3-nocsd.so.0@@g')'
-  wine_commands=("wine" "wineboot" "winecfg" "wineconsole" "winedbg" "winefile" "winepath" "winetricks")
-  for command in "${wine_commands[@]}"; do
-  alias "$command"="libclear $command"
-  done
-  fi
+  #if command -v wine &>/dev/null 2>&1 ;then
+  #alias libclear='LD_PRELOAD=$(echo "$LD_PRELOAD" | sed 's@/usr/lib/libgtk3-nocsd.so.0@@g')'
+  #wine_commands=("wine" "wineboot" "winecfg" "wineconsole" "winedbg" "winefile" "winepath" "winetricks")
+  #for command in "${wine_commands[@]}"; do
+  #alias "$command"="libclear $command"
+  #done
+  #fi
 # Fast shortcuts
   alias zshrc='${=EDITOR} ~/.zshrc'
   alias aliasrc='${=EDITOR} ~/.local/zsh/aliasrc'
