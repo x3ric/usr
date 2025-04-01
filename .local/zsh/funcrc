@@ -336,12 +336,13 @@ plugins() { # $HOME/.local/zsh/plugins scan of .zsh plugins and source in zshrc
 
 # Alias replaced
 
-manx() { # make man displays also infopages
+manx() { # make man displays infopages
     command="$1"
     if [[ -z "$2" && "$1" != "-h" && "$1" != "--help" ]]; then
-        \man "$@"
         if \info -w "$@" 2>/dev/null; then
             info "$@"
+        else
+            \man "$@"
         fi 
     else
         \man "$@"
