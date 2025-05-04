@@ -29,6 +29,7 @@ gdb.execute("set debuginfod enabled on")
 gdb.execute("set confirm off")
 gdb.execute("set startup-with-shell off")
 gdb.execute("set pagination off")
+#gdb.execute("set debuginfod enabled off")
 
-time.sleep(2)
+time.sleep(1)
 sys.stdout = original_stdout
