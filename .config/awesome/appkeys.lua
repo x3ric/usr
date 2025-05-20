@@ -251,10 +251,13 @@ appkeys["firefox"] = {
     style = { column = 2, geometry = { width = 450, height = 350 } },
     pack = {
         {{"Alt"}, "1..9", nil,{ description = "Go to tab", group = "Tabs" }},
-        {{ "Control" }, "t", nil,{ description = "New tab", group = "Tabs" }},
-        {{ "Control" }, "w", nil,{ description = "Close tab", group = "Tabs" }},
-        {{ "Control" }, "Tab", nil,{ description = "Next tab", group = "Tabs" }},
-        {{ "Control", "Shift" }, "Tab", nil,{ description = "Previous tab", group = "Tabs" }},
+        {{"Ctrl"}, "t", nil,{ description = "New tab", group = "Tabs" }},
+        {{"Ctrl"}, "w", nil,{ description = "Close tab", group = "Tabs" }},
+        {{"Ctrl"}, "Tab", nil,{ description = "Next tab", group = "Tabs" }},
+        {{"Ctrl", "Alt"}, "x", nil, { description = "Ai Pannel", group = "Tabs" }},
+        {{"Ctrl", "Shift"}, "i", nil, { description = "DevTools", group = "Tabs" }},
+        {{"Ctrl", "Shift"}, "c", nil, { description = "DevTools", group = "Tabs" }},
+        {{"Ctrl", "Shift"}, "Tab", nil,{ description = "Previous tab", group = "Tabs" }},
     }
 }
 appkeys["code"] = {

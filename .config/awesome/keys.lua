@@ -20,7 +20,7 @@
     local float      = require("lib.widgets.float")
     local widget     = require("lib.widgets.bar")
     local utils      = require("lib.utils")
-    local xres = require("lib.utils.xres")
+    local xres       = require("lib.utils.xres")
     local layouts    = require("lib.layouts")
     local menu       = require("menu")
 -- External libs
@@ -224,7 +224,31 @@
             if not classMatched and next(keys) ~= nil then
                 float.notify:show({ text = "No tips for " .. client.focus.class })
             end
-        end    
+        end
+        function run_tag_prompt()
+            if not float.prompt.wibox then float.prompt:init() end
+            local original_prompt = float.prompt.prompt
+            float.prompt.prompt = "New tag name: "
+            utils.placement.centered(float.prompt.wibox, nil, mouse.screen.workarea)
+            float.prompt.wibox.visible = true
+            awful.prompt.run({
+                prompt = float.prompt.prompt,
+                textbox = float.prompt.widget,
+                exe_callback = function(name)
+                    if name and #name > 0 then
+                        local t = awful.tag.add(name, {
+                            screen = awful.screen.focused(),
+                            layout = awful.layout.layouts[1]
+                        })
+                        t:view_only()
+                    end
+                end,
+                done_callback = function() 
+                    float.prompt.wibox.visible = false 
+                    float.prompt.prompt = original_prompt
+                end
+            })
+        end
         function run_rofi_with_dpi()
             local dpi = xres.dpi()
             local rofi_command = "rofi -show drun -theme applications -show-icons"
@@ -449,6 +473,7 @@
             {{ env.mod, "Shift" }, "p", function() top:show("cpu") end,{ description = "Top process list", group = "Widgets" }},
             {{ env.mod }, "F5", function () awful.screen.focused().quake:toggle() end,{description = "Dropdown teminal", group = "Actions"}},
             {{ env.alt }, "\\", function () awful.spawn.with_shell("zsh -ci rofi-hud") end,{description = "Global menu", group = "Actions"}},
+            {{ env.mod, "Shift" }, "F7", function() run_tag_prompt() end, { description = "Add tag with name", group = "Actions" }},
         }
         self.raw.client = {
             {{ env.mod }, "f", function(c) c.fullscreen = not c.fullscreen; c:raise() end,{ description = "Toggle fullscreen", group = "Client keys" }},

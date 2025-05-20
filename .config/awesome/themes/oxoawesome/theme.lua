@@ -10,12 +10,12 @@
 	local os = os
 	local awful = require("awful")
 local theme = {}
-theme.colormain = '#97A4E2'
-theme.colorurgent = '#6EE5EF'
+theme.colormain = '#564F96'
+theme.colorurgent = '#658B5F'
 theme.icon_theme = 'Papirus'
 function theme:init()
 	-- Main
-		self.wallpaper = os.getenv("HOME") .. "/.config/awesome/themes/oxoawesome/Default.jpg"
+		self.wallpaper = "/home/e/Pictures/Wallpapers/Nature/Nature.png"
 		self.desktopbg = self.wallpaper
 		self.path = awful.util.get_configuration_dir() .. "themes/oxoawesome"
 		self.homedir = os.getenv("HOME")

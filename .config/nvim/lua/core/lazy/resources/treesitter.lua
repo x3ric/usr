@@ -24,14 +24,13 @@ return {
         "yaml",
         "php",
         "scss",
-        "cpp",
         "java",
         "graphql",
         "dockerfile",
       },
       highlight = { enable = true },
       indent = { enable = true, disable = { "yaml", "python", "html" } },
-      context_commentstring = { enable = true },
+      -- context_commentstring is deprecated, using the separate plugin instead
       rainbow = {
         enable = true,
         query = "rainbow-parens",
@@ -70,6 +69,14 @@ return {
         },
       }
     end,
+  },
+
+  {
+    "JoosepAlviste/nvim-ts-context-commentstring",
+    lazy = true,
+    opts = {
+      enable_autocmd = false,
+    },
   },
 
   {

@@ -42,8 +42,7 @@ return {
   { -- provides Lua nvim snippets
     "folke/neodev.nvim", 
     config = function()
-      require("neodev").setup({
-      })
+      require("neodev").setup({})
     end
   },
   { -- provides support for expanding abbreviations
@@ -59,10 +58,10 @@ return {
         },
         html = {
           default_attributes = {
-            option = { value = vim.null },
+            option = { value = nil }, -- Changed vim.null to nil
             textarea = {
-              id = vim.null,
-              name = vim.null,
+              id = nil, -- Changed vim.null to nil
+              name = nil, -- Changed vim.null to nil
               cols = 10,
               rows = 10,
             },
@@ -83,11 +82,10 @@ return {
       }
     end,
   },
-  { -- provides completiton
+  { -- provides completion
     "hrsh7th/nvim-cmp",
     version = false,
     event = { "InsertEnter", "CmdlineEnter" },
-    -- commit = "b8c2a62b3bd3827aa059b43be3dd4b5c45037d65",
     dependencies = {
       "mfussenegger/nvim-jdtls",
       "hrsh7th/cmp-nvim-lsp",
@@ -95,24 +93,33 @@ return {
       "hrsh7th/cmp-path",
       "hrsh7th/cmp-cmdline",
       "saadparwaiz1/cmp_luasnip",
-      "hrsh7th/cmp-nvim-lsp",
     },
     opts = function()
       local cmp = require("cmp")
       local defaults = require("cmp.config.default")()
+      
+      -- Set up cmdline completions
       cmp.setup.cmdline({ "/", "?" }, {
         mapping = cmp.mapping.preset.cmdline(),
         sources = { { name = "buffer" } },
       })
+      
       cmp.setup.cmdline(":", {
         mapping = cmp.mapping.preset.cmdline(),
         sources = cmp.config.sources({ { name = "path" } }, { { name = "cmdline" } }),
       })
+      
+      -- Java-specific configuration
       cmp.setup.filetype("java", {
-        completion = {
-          keyword_length = 2,
-        },
+        sources = cmp.config.sources({
+          { name = "nvim_lsp", priority = 1000, max_item_count = 20, entry_filter = function(entry) return require("cmp").lsp.CompletionItemKind.Text ~= entry:get_kind() end },
+          { name = "luasnip", priority = 750 },
+          { name = "buffer", priority = 500, keyword_length = 3 },
+          { name = "path", priority = 250 },
+        })
       })
+      
+      -- Main configuration
       return {
         completion = {
           completeopt = "menu,menuone,noinsert",
@@ -123,13 +130,13 @@ return {
           end,
         },
         mapping = cmp.mapping.preset.insert({
-          ["<C-j>"] = cmp.mapping(cmp.mapping.select_next_item({ behavior = cmp.SelectBehavior.Insert }), { "i", "c" }),
-          ["<C-k>"] = cmp.mapping(cmp.mapping.select_prev_item({ behavior = cmp.SelectBehavior.Insert }), { "i", "c" }),
+          ["<C-j>"] = cmp.mapping.select_next_item({ behavior = cmp.SelectBehavior.Insert }),
+          ["<C-k>"] = cmp.mapping.select_prev_item({ behavior = cmp.SelectBehavior.Insert }),
           ["<C-b>"] = cmp.mapping.scroll_docs(-4),
           ["<C-f>"] = cmp.mapping.scroll_docs(4),
           ["<C-Space>"] = cmp.mapping.complete(),
           ["<C-e>"] = cmp.mapping.abort(),
-          ["<CR>"] = cmp.mapping.confirm({ select = true }), -- Accept currently selected item. Set `select` to `false` to only confirm explicitly selected items.
+          ["<CR>"] = cmp.mapping.confirm({ select = true }),
           ["<Tab>"] = cmp.mapping.select_next_item({ behavior = cmp.SelectBehavior.Insert }),
           ["<S-Tab>"] = cmp.mapping.select_prev_item({ behavior = cmp.SelectBehavior.Insert }),
           ["<C-Esc>"] = cmp.mapping(function(fallback)
@@ -138,11 +145,11 @@ return {
           end),
         }),
         sources = cmp.config.sources({
-          { name = "codeium" },
-          { name = "nvim_lsp", keyword_length = 2 },
-          { name = "luasnip" },
-          { name = "buffer", keyword_length = 3 },
-          { name = "path" },
+          { name = "codeium", priority = 1200 },
+          { name = "nvim_lsp", priority = 1000, max_item_count = 20, entry_filter = function(entry) return require("cmp").lsp.CompletionItemKind.Text ~= entry:get_kind() end },
+          { name = "luasnip", priority = 750 },
+          { name = "buffer", priority = 500, keyword_length = 3 },
+          { name = "path", priority = 250 },
         }),
         formatting = {
           fields = { "kind", "abbr", "menu" },
@@ -154,14 +161,18 @@ return {
               buffer = "Buffer",
               path = "Path",
             })[entry.source.name]
-            local icons = require("custom.icons")
-            if icons.kinds[item.kind] then
+            
+            -- Safely require icons
+            local ok, icons = pcall(require, "custom.icons")
+            if ok and icons.kinds[item.kind] then
               item.kind = icons.kinds[item.kind]
             end
-            if entry.source.name == "codeium" then
+            
+            if entry.source.name == "codeium" and ok and icons.misc and icons.misc.codeium then
               item.kind = icons.misc.codeium
               item.kind_hl_group = "CmpItemKindVariable"
             end
+            
             return item
           end,
         },
@@ -177,17 +188,24 @@ return {
       require("mini.pairs").setup(opts)
     end,
   },
-  { -- provides Identation folder
+  { -- provides Indentation folder
     'Wansmer/treesj',
     dependencies = { 'nvim-treesitter/nvim-treesitter' },
     config = function()
-      vim.keymap.set('n', '<leader>j', function () require('treesj').toggle() end , {desc = 'Treesitter Toggle Join'})
-      vim.keymap.set('n', '<leader>J', function () require('treesj').toggle({ split = { recursive = true } }) end , {desc = 'Treesitter Toggle Join Recursive'})
+      vim.keymap.set('n', '<leader>j', function() require('treesj').toggle() end, {desc = 'Treesitter Toggle Join'})
+      vim.keymap.set('n', '<leader>J', function() require('treesj').toggle({ split = { recursive = true } }) end, {desc = 'Treesitter Toggle Join Recursive'})
+      
+      -- Safe loading of langs variable
+      local langs = nil
+      pcall(function()
+        langs = require("treesj.langs")
+      end)
+      
       require('treesj').setup({
         use_default_keymaps = false,
         check_syntax_error = true,
         max_join_length = 1500,
-        cursor_behavior = 'hold',-- hold|start|end:
+        cursor_behavior = 'hold', -- hold|start|end:
         notify = true,
         langs = langs,
         dot_repeat = true,
@@ -218,73 +236,5 @@ return {
       hint_scheme = "Comment", -- highlight group for the virtual text
       hint_prefix = "󰨽 ",
     },
-  },
-  { -- provides regex explains
-    'bennypowers/nvim-regexplainer',
-    config = function() require'regexplainer'.setup {
-      mode = 'narrative', -- TODO: 'ascii', 'graphical'
-      auto = false, -- automatically show the explainer when the cursor enters a regexp
-      filetypes = {
-        'html',
-        'js',
-        'cjs',
-        'mjs',
-        'ts',
-        'jsx',
-        'tsx',
-        'cjsx',
-        'mjsx',
-      },
-      debug = false, 
-      display = 'popup', -- 'split', 'popup'
-      mappings = {
-        -- toggle = 'gR',
-        -- show = 'gS',
-        -- hide = 'gH',
-        -- show_split = 'gP',
-        -- show_popup = 'gU',
-      },
-      narrative = {
-        separator = '\n',
-      },
-    } end,
-    requires = {'nvim-treesitter/nvim-treesitter','MunifTanjim/nui.nvim',}
-  },
-  --[[{ -- Open source code ai/snippets "Codeium Auth" needed to login 
-    "Exafunction/codeium.vim",
-    event = { "InsertEnter", "CmdlineEnter" },
-    dependencies = {
-        "nvim-lua/plenary.nvim",
-        "hrsh7th/nvim-cmp",
-    },
-    config = function ()
-      vim.keymap.set('i', '<C-g>', function () return vim.fn['codeium#Accept']() end, { expr = true ,desc="Accept suggest"})
-      vim.keymap.set('i', '<c-:>', function() return vim.fn['codeium#CycleCompletions'](1) end, { expr = true ,desc="Cycle Next suggest"})
-      vim.keymap.set('i', '<c-.>', function() return vim.fn['codeium#CycleCompletions'](-1) end, { expr = true ,desc="Cycle Prev suggest"})
-      vim.keymap.set('i', '<c-x>', function() return vim.fn['codeium#Clear']() end, { expr = true ,desc="Clear suggest"})
-     require("codeium").setup({})
-    end,
-  },--]]
-  --[[{ -- Open Ai "ChatGpt" put your key in (.config/nvim/plugins.resources.util) and set the api key
-    "jackMort/ChatGPT.nvim",
-    lazy = require("plugins.resources.util").apikey == nil,
-    config = function()
-      require("chatgpt").setup({
-        api_key_cmd = require("plugins.resources.util").apikey
-      })
-    end,
-  },--]]
-  --[[{ -- Github copilot ":Copilot auth" to auth from the web
-    "zbirenbaum/copilot.lua",
-    cmd = "Copilot",
-    build = ":Copilot auth",
-    opts = {
-      suggestion = { enabled = false },
-      panel = { enabled = false },
-      filetypes = {
-        markdown = true,
-        help = true,
-      },
-    },
-  },--]]
+  }
 }

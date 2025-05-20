@@ -10,34 +10,31 @@ local servers = {
   html = {},
   jsonls = {},
   sqlls = {},
-  --intelephense = {}, -- php language server
+  intelephense = {},
   jdtls = {
     disabled = true,
   },
   lua_ls = {
+    cmd = { "lua-language-server" },
     settings = {
       Lua = {
+        runtime = {
+          version = "LuaJIT",
+          path = vim.split(package.path, ";"),
+        },
         diagnostics = {
           globals = { "vim" },
         },
         workspace = {
+          library = {
+            [vim.fn.expand("$VIMRUNTIME/lua")] = true,
+            [vim.fn.expand("$VIMRUNTIME/lua/vim/lsp")] = true,
+          },
           checkThirdParty = false,
         },
+        telemetry = { enable = false },
         completion = {
           callSnippet = "Replace",
-        },
-        misc = {
-          parameters = {
-            "--log-level=trace",
-          },
-        },
-        format = {
-          enable = false,
-          defaultConfig = {
-            indent_style = "space",
-            indent_size = "2",
-            continuation_indent_size = "2",
-          },
         },
       },
     },
@@ -46,24 +43,28 @@ local servers = {
     settings = {
       typescript = {
         inlayHints = {
-          includeInlayParameterNameHints = "all",
-          includeInlayParameterNameHintsWhenArgumentMatchesName = true,
-          includeInlayFunctionParameterTypeHints = true,
-          includeInlayVariableTypeHints = true,
-          includeInlayPropertyDeclarationTypeHints = true,
-          includeInlayFunctionLikeReturnTypeHints = true,
-          includeInlayEnumMemberValueHints = true,
+          parameterNames = {
+            enabled = "all", -- 'none' | 'literals' | 'all'
+            suppressWhenArgumentMatchesName = false,
+          },
+          parameterTypes = { enabled = true },
+          variableTypes = { enabled = true },
+          propertyDeclarationTypes = { enabled = true },
+          functionLikeReturnTypes = { enabled = true },
+          enumMemberValues = { enabled = true },
         },
       },
       javascript = {
         inlayHints = {
-          includeInlayParameterNameHints = "all",
-          includeInlayParameterNameHintsWhenArgumentMatchesName = false,
-          includeInlayFunctionParameterTypeHints = true,
-          includeInlayVariableTypeHints = true,
-          includeInlayPropertyDeclarationTypeHints = true,
-          includeInlayFunctionLikeReturnTypeHints = true,
-          includeInlayEnumMemberValueHints = true,
+          parameterNames = {
+            enabled = "all", -- 'none' | 'literals' | 'all'
+            suppressWhenArgumentMatchesName = false,
+          },
+          parameterTypes = { enabled = true },
+          variableTypes = { enabled = true },
+          propertyDeclarationTypes = { enabled = true },
+          functionLikeReturnTypes = { enabled = true },
+          enumMemberValues = { enabled = true },
         },
       },
     },
@@ -88,6 +89,7 @@ local servers = {
           inlayHints = {
             variableTypes = true,
             functionReturnTypes = true,
+            parameterNames = true
           },
           useLibraryCodeForTypes = true,
           diagnosticSeverityOverrides = {
@@ -95,10 +97,10 @@ local servers = {
             reportOptionalMemberAccess = "none",
             reportOptionalSubscript = "none",
             reportPrivateImportUsage = "none",
+          },
         },
       },
     },
-  },
   },
   pylsp = {
    -- reference: https://github.com/python-lsp/python-lsp-server/blob/develop/CONFIGURATION.md

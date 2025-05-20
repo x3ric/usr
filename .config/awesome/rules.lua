@@ -67,8 +67,7 @@ function rules:init(args)
       },
       { rule = { class = "feh", name = "Preview" }, properties = { floating = true, placement = awful.placement.centered } },
       { rule = { class = "firefox", instance = "Toolkit" }, properties = { floating = true , sticky = true} },
-      { rule = { class = "kitty" }, properties = { opacity = 0.75  } },
-      { rule = { class = "nvim" }, properties = { opacity = 0.75  } },
+      { rule = { class = "nvim" }, properties = { opacity = 0.75 } },
       {-- tag full
         rule_any = { class = { "firefox" } },
         properties = {
@@ -125,7 +124,22 @@ function rules:init(args)
       {
          rule_any = { class = { "jetbrains-%w+", "java-lang-Thread" } },
          callback = function(jetbrains) if jetbrains.skip_taskbar then jetbrains.floating = true end end
-      }
+      },
+      --{
+      --   rule_any = { class = { "grafenic", "Grafenic" } },
+      --   properties = {
+      --      floating = true,
+      --      tag = awful.screen[1].tags[1],
+      --      switchtotag = false,
+      --      placement = awful.placement.centered,
+      --   }
+      --   callback = function(c)
+      --      c.width = screen_width * 0.75
+      --      c.height = screen_height * 0.75
+      --      c.x = (screen_width - c.width) / 2
+      --      c.y = (screen_height - c.height) / 2
+      --   end,
+      --}
    }
    awful.rules.rules = rules.rules
 end

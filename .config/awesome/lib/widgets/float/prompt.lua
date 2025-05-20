@@ -18,7 +18,7 @@ local beautiful = require("beautiful")
 local wibox = require("wibox")
 local naughty = require("naughty")
 
-local redutil = require("lib.utils")
+local utils = require("lib.utils")
 local decoration = require("lib.widgets.float.decoration")
 
 -- Initialize tables for module
@@ -36,7 +36,7 @@ local function default_style()
 		color        = { border = "#575757", wibox = "#202020" },
 		shape        = nil
 	}
-	return redutil.table.merge(style, redutil.table.check(beautiful, "float.prompt") or {})
+	return utils.table.merge(style, utils.table.check(beautiful, "float.prompt") or {})
 end
 
 -- Initialize prompt widget
@@ -74,7 +74,7 @@ end
 -----------------------------------------------------------------------------------------------------------------------
 function floatprompt:run()
 	if not self.wibox then self:init() end
-	redutil.placement.centered(self.wibox, nil, mouse.screen.workarea)
+	utils.placement.centered(self.wibox, nil, mouse.screen.workarea)
 	self.wibox.visible = true
 
 	awful.prompt.run({
@@ -84,7 +84,7 @@ function floatprompt:run()
 			local shell = os.getenv("SHELL") or "sh"
 			local result = awful.spawn(string.format("%s -c '%s'", shell, input))
 			if type(result) == "string" then
-				local notify_args = redutil.table.merge({ title = "Prompt", text = result }, self.style.naughty)
+				local notify_args = utils.table.merge({ title = "Prompt", text = result }, self.style.naughty)
 				naughty.notify(notify_args)
 			end
 		end,

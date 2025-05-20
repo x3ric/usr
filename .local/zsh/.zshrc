@@ -31,18 +31,18 @@ setopt glob_complete
     bgnotify "$title -- after $3 s" "$2";
   }
 # Configs
-command_not_found_handler() { # zsh handlers
-  CONFSZ=$(du -sb "$HOME/.local/zsh" | awk '{print $1}')
-  if [[ $CONFSIZE != $CONFSZ ]]; then
-    source "$HOME/.local/zsh/.zshrc"
-    if command -v "$1" >/dev/null 2>&1 || alias "$1" >/dev/null 2>&1 || functions "$1" >/dev/null 2>&1; then
-      zsh -ci "unsetopt correct;$@; exit"
-      return 0
-    fi
-  else
-    nyack "$@" || return 1
-  fi
-}
+#command_not_found_handler() { # zsh handlers nyack
+#  CONFSZ=$(du -sb "$HOME/.local/zsh" | awk '{print $1}')
+#  if [[ $CONFSIZE != $CONFSZ ]]; then
+#    source "$HOME/.local/zsh/.zshrc"
+#    if command -v "$1" >/dev/null 2>&1 || alias "$1" >/dev/null 2>&1 || functions "$1" >/dev/null 2>&1; then
+#      zsh -ci "unsetopt correct;$@; exit"
+#      return 0
+#    fi
+#  else
+#    nyack "$@" || return 1
+#  fi
+#}
 if [[ -z $SSH_TTY ]] && [[ ! -z $tty ]]; then 
 	scroll() { # Scrolling on tty
 		if ! command -v scrollback &>/dev/null; then	

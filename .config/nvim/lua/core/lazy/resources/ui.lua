@@ -13,6 +13,10 @@ return {
       },
     },
     opts = {
+      on_open = function(win)
+        vim.api.nvim_win_set_config(win, { zindex = 1000 })
+      end,
+      stages = "fade",
       icons = {
         ERROR = Icon.diagnostics.error .. " ",
         INFO = Icon.diagnostics.info .. " ",
@@ -25,6 +29,7 @@ return {
       max_width = function()
         return math.floor(vim.o.columns * 0.75)
       end,
+      render = "default",
     },
     init = function()
       if not Util.has("noice.nvim") then
@@ -40,18 +45,6 @@ return {
         require("color-picker")
     end,
   },
-  --[[{ -- Kitty term image protocol and latex preview
-    "edluffy/hologram.nvim",
-    config = function()
-      package.preload['hologram.image'] = function()
-        return require('plugins.configs.hologram.image') -- hides internal colorschemes
-      end
-      require('plugins.resources.latexrender') -- latex image render latex needed "sudo pacman -Sy texlive-bin texlive-latex texlive-latexextra"
-      require('hologram').setup{
-        auto_display = true -- WIP automatic markdown image display, may be prone to breaking
-      } 
-    end,
-  },--]]
   { -- buffer tabs
     "akinsho/bufferline.nvim",
     event = { "BufReadPost", "BufNewFile" },
@@ -96,25 +89,6 @@ return {
       },
     },
   },
-  { -- dap debugger UI module
-    "rcarriga/nvim-dap-ui",
-    event = "VeryLazy",
-    dependencies ={"mfussenegger/nvim-dap", "nvim-neotest/nvim-nio"},
-    config = function()
-      local dap = require("dap")
-      local dapui = require("dapui")
-      dapui.setup()
-      dap.listeners.after.event_initialized["dapui_config"] = function()
-        dapui.open()
-      end
-      dap.listeners.before.event_terminated["dapui_config"] = function()
-        dapui.close()
-      end
-      dap.listeners.before.event_exited["dapui_config"] = function()
-        dapui.close()
-      end
-    end
-  },
   { -- bottom info bar with mode errors etc
     "nvim-lualine/lualine.nvim",
     event = { "VeryLazy" },
@@ -135,10 +109,10 @@ return {
     event = { "BufReadPost", "BufNewFile" },
     opts = function()
       local hooks = require("ibl.hooks")
+      -- Restrict scope highlighting to files under a certain size threshold
       hooks.register(hooks.type.SCOPE_ACTIVE, function(bufnr)
         return vim.api.nvim_buf_line_count(bufnr) < 2000
       end)
-
       --local highlight = {
       --  "RainbowDelimiterRed",
       --  "RainbowDelimiterYellow",
@@ -149,23 +123,18 @@ return {
       --  "RainbowDelimiterCyan",
       --}
       return {
-        debounce = 200,
         indent = {
           char = "▏",
           tab_char = "▏",
         },
         scope = {
-          injected_languages = true,
-          highlight = highlight,
+          enabled = true,
           show_start = true,
           show_end = false,
           char = "▏",
-          -- include = {
-          --   node_type = { ["*"] = { "*" } },
-          -- },
-          -- exclude = {
-          --   node_type = { ["*"] = { "source_file", "program" }, python = { "module" }, lua = { "chunk" } },
-          -- },
+          include = {
+            node_type = { ["*"] = { "*" } },
+          },
         },
         exclude = {
           filetypes = {
@@ -217,6 +186,7 @@ return {
       require("mini.indentscope").setup(opts)
     end,
   },
+  { 'echasnovski/mini.icons', version = false },
   { -- line ui with current cursor function
     "utilyre/barbecue.nvim",
     event = { "BufReadPost", "BufNewFile" },
@@ -357,32 +327,6 @@ return {
         return vim.ui.input(...)
       end
     end,
-  },
-  { -- light icon when cursor is on a code actions word
-    "kosayoda/nvim-lightbulb",
-    opts = {
-      link_highlights = false,
-      sign = {
-        enabled = true,
-        text = "",
-        -- Priority of the gutter sign
-        priority = 20,
-      },
-      status_text = {
-        enabled = true,
-        -- Text to provide when code actions are available
-        text = "status_text",
-        -- Text to provide when no actions are available
-        text_unavailable = "",
-      },
-      autocmd = {
-        enabled = true,
-        -- see :help autocmd-pattern
-        pattern = { "*" },
-        -- see :help autocmd-events
-        events = { "CursorHold", "CursorHoldI", "LspAttach" },
-      },
-    },
   },
   { -- Errors switcher telescope
     "folke/trouble.nvim",
@@ -574,13 +518,15 @@ return {
       },
       lsp = {
         progress = { enabled = true },
-        hover = { enabled = false },
-        signature = { enabled = false },
+        hover = { enabled = true },
+        signature = { enabled = true },
         -- override markdown rendering so that **cmp** and other plugins use **Treesitter**
         override = {
           ["vim.lsp.util.convert_input_to_markdown_lines"] = true,
           ["vim.lsp.util.stylize_markdown"] = true,
           ["cmp.entry.get_documentation"] = true,
+          ["vim.lsp.buf.hover"] = true,
+          ["vim.lsp.buf.signature_help"] = true,
         },
       },
       routes = {

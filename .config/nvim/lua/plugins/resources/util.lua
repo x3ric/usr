@@ -11,8 +11,7 @@ M.has = function(plugin)
 end
 
 function M.get_clients(...)
-  local fn = vim.lsp.get_clients or vim.lsp.get_active_clients
-  return fn(...)
+  return vim.lsp.get_clients(...)
 end
 
 --- @param on_attach fun(client, buffer)
@@ -62,7 +61,7 @@ M.get_root = function()
   ---@type string[]
   local roots = {}
   if path then
-    for _, client in pairs(vim.lsp.get_active_clients({ bufnr = 0 })) do
+    for _, client in pairs(vim.lsp.get_clients({ bufnr = 0 })) do
       local workspace = client.config.workspace_folders
       local paths = workspace
           and vim.tbl_map(function(ws)
@@ -633,14 +632,14 @@ _G.generate_clangd_config = function()
   local root_dir = (util.root_pattern('.git', 'CMakeLists.txt', 'Makefile')(vim.fn.expand('%:p:h')) or vim.fn.expand('%:p:h')) 
   local include_dir = util.path.join(root_dir, 'include')
   if not util.path.is_dir(include_dir) then
-      print("Include directory not found in the project root.")
+      --print("Include directory not found in the project root.")
       return
   end
   local clangd_config_path = util.path.join(root_dir, '.clangd')
   local file_content = 'CompileFlags:\n  Add: \n    - "-I' .. include_dir .. '"'
   local file, err = io.open(clangd_config_path, "w")
   if not file then
-      print("Error opening .clangd file for writing: " .. err)
+      --print("Error opening .clangd file for writing: " .. err)
       return
   end
   file:write(file_content)

@@ -172,46 +172,58 @@ local function tagmenu_rebuild(menu, submenu_index, style)
 	end
 end
 
--- Function to update tag submenu icons
+-- Function to update tag submenu icons (and pick up new/removed tags at runtime)
 --------------------------------------------------------------------------------
 local function tagmenu_update(c, menu, submenu_index, style)
-	-- if the screen has changed (and thus the tags) since the last time the
-	-- tagmenu was built, rebuild it first
-	if last.tag_screen ~= mouse.screen then
-		tagmenu_rebuild(menu, submenu_index, style)
-		last.tag_screen = mouse.screen
-	end
-	for k, t in ipairs(last.screen.tags) do
-		if not awful.tag.getproperty(t, "hide") then
+    local screen_changed = last.tag_screen ~= mouse.screen
+    local submenu = menu.items[submenu_index[1]].child
+    local tag_count_changed = #submenu.items ~= #last.screen.tags
 
-			-- set layout icon for every tag
-			local l = awful.layout.getname(awful.tag.getproperty(t, "layout"))
+    -- If screen changed OR tag count changed, rebuild the submenu(s) completely
+    if screen_changed or tag_count_changed then
+        tagmenu_rebuild(menu, submenu_index, style)
+        last.tag_screen = mouse.screen
+    end
 
-			local check_icon = style.micon.blank
-			if c then
-				local client_tags = c:tags()
-				check_icon = awful.util.table.hasitem(client_tags, t) and style.micon.check or check_icon
-			end
+    -- Now refresh icons for every tag in both submenus
+    for k, t in ipairs(last.screen.tags) do
+        -- skip hidden tags
+        if not awful.tag.getproperty(t, "hide") then
+            -- pick up layout icon
+            local layout_name = awful.layout.getname(awful.tag.getproperty(t, "layout"))
+            local layout_icon = style.layout_icon[layout_name] or style.layout_icon.unknown
 
-			for _, index in ipairs(submenu_index) do
-				local submenu = menu.items[index].child
-				if submenu.items[k].icon then
-					submenu.items[k].icon:set_image(style.layout_icon[l] or style.layout_icon.unknown)
-				end
+            -- pick up check icon
+            local check_icon = style.micon.blank
+            if c then
+                local client_tags = c:tags()
+                if awful.util.table.hasitem(client_tags, t) then
+                    check_icon = style.micon.check
+                end
+            end
 
-				-- set "checked" icon if tag active for given client
-				-- otherwise set empty icon
-				if c then
-					if submenu.items[k].right_icon then
-						submenu.items[k].right_icon:set_image(check_icon)
-					end
-				end
+            -- update both “Move to tag” and “Add to tag” submenus
+            for _, idx in ipairs(submenu_index) do
+                local sm = menu.items[idx].child
+                local item = sm.items[k]
 
-				-- update position of any visible submenu
-				if submenu.wibox.visible then submenu:show() end
-			end
-		end
-	end
+                -- left icon = layout
+                if item.icon then
+                    item.icon:set_image(layout_icon)
+                end
+                -- right icon = checkmark
+                if c and item.right_icon then
+                    item.right_icon:set_image(check_icon)
+                end
+
+                -- if the submenu is currently visible, re-show so Awesome
+                -- recalculates its geometry with the fresh icons
+                if sm.wibox.visible then
+                    sm:show()
+                end
+            end
+        end
+    end
 end
 
 -- Function to construct menu line with state icons

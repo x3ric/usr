@@ -100,24 +100,27 @@ local config = {
 
 config.filesystem.components = require("plugins.configs.neo-tree.sources.filesystem.components")
 local function hideCursor()
-  vim.cmd([[
-    setlocal guicursor=n:block-Cursor
-    hi Cursor blend=100
-  ]])
-end
-local function showCursor()
-  vim.cmd([[
-    setlocal guicursor=n-v-c-sm:block,i-ci-ve:ver25,r-cr-o:hor20
-    hi Cursor blend=0
-  ]])
+  vim.schedule(function()
+    vim.cmd([[setlocal guicursor=n:block-Cursor]])
+    vim.cmd([[hi Cursor blend=100]])
+  end)
 end
 
-local neotree_group = Util.augroup("neo-tree_hide_cursor")
+local function showCursor()
+  vim.schedule(function()
+    vim.cmd([[setlocal guicursor=n-v-c-sm:block,i-ci-ve:ver25,r-cr-o:hor20]])
+    vim.cmd([[hi Cursor blend=0]])
+  end)
+end
+
+local neotree_group = vim.api.nvim_create_augroup("neo-tree_hide_cursor", { clear = true })
 vim.api.nvim_create_autocmd({ "FileType" }, {
   pattern = "neo-tree",
+  group = neotree_group,
   callback = function()
     vim.api.nvim_create_autocmd({ "WinEnter", "BufEnter", "InsertEnter" }, {
       group = neotree_group,
+      buffer = vim.api.nvim_get_current_buf(),
       callback = function()
         local fire = vim.bo.filetype == "neo-tree" and hideCursor or showCursor
         fire()
@@ -125,6 +128,7 @@ vim.api.nvim_create_autocmd({ "FileType" }, {
     })
     vim.api.nvim_create_autocmd({ "WinLeave", "BufLeave", "InsertEnter" }, {
       group = neotree_group,
+      buffer = vim.api.nvim_get_current_buf(),
       callback = function()
         showCursor()
       end,
