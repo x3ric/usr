@@ -84,7 +84,7 @@ SHELL=$ZSH_NAME $fzf_command \
   --ansi \
   --bind=$binds \
   --bind="${switch_group[1]}:reload($reload_command -1),${switch_group[2]}:reload($reload_command 1)" \
-  --color=16 \
+  --color=bg+:234 \
   --cycle \
   --delimiter='\x00' \
   --expect=$continuous_trigger,$print_query,$accept_line \
