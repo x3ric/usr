@@ -40,7 +40,7 @@
   alias cbat='_cbat() { highlight --force -i $1 | bat }; _cbat'
   alias icat='kitty +kitten icat'
 # Fzf utils
-  alias fzf='fzf --color=bg+:8'
+  alias fzf='fzf --color=bg+:234'
   alias fzf-tmux='fzf-tmux --color=16'
   alias fzf-file='x=$(fzf-splitted) && xdg-open $x'
   alias fzf-dir='x=$(find . -type d -print 2>/dev/null | fzf-splitted) && thunar ${x%/*}'
