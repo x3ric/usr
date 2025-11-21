@@ -310,7 +310,7 @@ while true; do
     updates
     if [ -f "$HOME/.local/share/bin/archx" ]; then
       options=("Install" "Update" "Quit")
-      selected_option=$(printf '%s\n' "${options[@]}" | fzf-tmux --prompt="Find = " -x --color=16 --height ${FZF_TMUX_HEIGHT:-40%} -m --reverse --ansi)
+      selected_option=$(printf '%s\n' "${options[@]}" | fzf-tmux --prompt="Find = " -x --color=bg+:234 --height ${FZF_TMUX_HEIGHT:-40%} -m --reverse --ansi)
       case $selected_option in
         "Install") menu_state=2 ;;
         "Update") clear && updateconfig || exit_flag=true ;;
@@ -319,7 +319,7 @@ while true; do
       esac
     else
       options=("Configs" "Quit")
-      selected_option=$(printf '%s\n' "${options[@]}" | fzf-tmux --prompt="Find = " -x --color=16 --height ${FZF_TMUX_HEIGHT:-40%} -m --reverse --ansi)
+      selected_option=$(printf '%s\n' "${options[@]}" | fzf-tmux --prompt="Find = " -x --color=bg+:234 --height ${FZF_TMUX_HEIGHT:-40%} -m --reverse --ansi)
       case $selected_option in
         "Configs") clear && updateconfig || exit_flag=true ;;
         "Quit") clear && exit ;;
@@ -330,7 +330,7 @@ while true; do
     showlogo
     echo -e "                  \033[1m[INSTALLERS]\033[0m"
     options=("Services" "Apps" "Back")
-    selected_option=$(printf '%s\n' "${options[@]}" | fzf-tmux --prompt=" Find = " -x --color=16 --height ${FZF_TMUX_HEIGHT:-40%} -m --reverse --ansi)
+    selected_option=$(printf '%s\n' "${options[@]}" | fzf-tmux --prompt=" Find = " -x --color=bg+:234 --height ${FZF_TMUX_HEIGHT:-40%} -m --reverse --ansi)
     case $selected_option in
       "Services") menu_state=3 ;;
       "Apps") menu_state=4 ;;
@@ -342,7 +342,7 @@ while true; do
     echo -e "                  \033[1m[INSTALLERS]\033[0m"
     echo -e "                   \033[1m[SERVICES]\033[0m"
     options=("Printers" "Samba" "Back")
-    selected_option=$(printf '%s\n' "${options[@]}" | fzf-tmux --prompt=" Find = " -x --color=16 --height ${FZF_TMUX_HEIGHT:-40%} -m --reverse --ansi)
+    selected_option=$(printf '%s\n' "${options[@]}" | fzf-tmux --prompt=" Find = " -x --color=bg+:234 --height ${FZF_TMUX_HEIGHT:-40%} -m --reverse --ansi)
     case $selected_option in
       "Printers") clear && installprinters || exit_flag=true ;;
       "Samba") clear && installsamba || exit_flag=true ;;
@@ -353,7 +353,7 @@ while true; do
     showlogo
     echo -e "                  \033[1m[INSTALLERS]\033[0m"
     options=("Upgrade" "Picom" "Remap" "Wine" "Ctpv" "Back")
-    selected_option=$(printf '%s\n' "${options[@]}" | fzf-tmux --prompt=" Find = " -x --color=16 --height ${FZF_TMUX_HEIGHT:-40%} -m --reverse --ansi)
+    selected_option=$(printf '%s\n' "${options[@]}" | fzf-tmux --prompt=" Find = " -x --color=bg+:234 --height ${FZF_TMUX_HEIGHT:-40%} -m --reverse --ansi)
     case $selected_option in
       "Upgrade") clear && yay -Syu --noconfirm || exit_flag=true ;;
       "Picom") clear && installpicom || exit_flag=true ;;
