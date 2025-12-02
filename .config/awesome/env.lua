@@ -15,7 +15,7 @@ function env:init(args)
     self.alt = args.alt or "Mod1"
     self.filemanager = args.filemanager or "thunar"
     self.browser = args.browser or "firefox"
-    self.editor = args.editor or "kitty --class nvim nvim"
+    self.editor = args.editor or "emacs" -- "kitty --class nvim nvim"
     self.player = args.player or "mpd"
     self.updates = args.updates or "pacman -Qu | grep -v ignored | wc -l"
     self.home = os.getenv("HOME")
