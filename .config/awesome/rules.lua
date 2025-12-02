@@ -68,6 +68,22 @@ function rules:init(args)
       { rule = { class = "feh", name = "Preview" }, properties = { floating = true, placement = awful.placement.centered } },
       { rule = { class = "firefox", instance = "Toolkit" }, properties = { floating = true , sticky = true} },
       { rule = { class = "nvim" }, properties = { opacity = 0.75 } },
+      {
+        rule_any = { class = { "emacs", "Emacs" } },
+        properties = { titlebars_enabled = false },
+        callback = function(c)
+           require("lib.widgets.bar.titlebar").hide_all({c})
+        end
+      },
+      {
+        rule_any = { class = { "emacs" } },
+        properties = {
+           callback = function(c)
+               bar = require("lib.widgets.bar.titlebar")
+               bar.hide_all({ c })
+           end
+        }
+      },
       {-- tag full
         rule_any = { class = { "firefox" } },
         properties = {
