@@ -76,7 +76,7 @@ function rules:init(args)
         end
       },
       {
-        rule_any = { class = { "emacs" } },
+        rule_any = { class = { "kitty" } },
         properties = {
            callback = function(c)
                bar = require("lib.widgets.bar.titlebar")
@@ -85,7 +85,7 @@ function rules:init(args)
         }
       },
       {-- tag full
-        rule_any = { class = { "firefox" } },
+        rule_any = { class = { "firefox", "emacs", "obsidian" } },
         properties = {
            tag = "Full",
            switchtotag = true,
