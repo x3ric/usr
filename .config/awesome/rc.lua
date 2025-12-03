@@ -72,6 +72,7 @@
 			awful.button({         }, 5, function(t) awful.tag.viewprev(t.screen) end)
 		)
 		taglist.names = { "Main", "Full", "Edit" }
+		taglist.gap = 0
 		local al = awful.layout.layouts
 		taglist.layouts = { al[1], al[2], al[3]}
 		local tasklist = {}
