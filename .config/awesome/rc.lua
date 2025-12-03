@@ -245,7 +245,7 @@
 			taglist[s] = widget.taglist({ screen = s, buttons = taglist.buttons, hint = env.tagtip, layout = taglist.layout }, taglist.style)
 			tasklist[s] = widget.tasklist({ screen = s, buttons = tasklist.buttons }, tasklist.style)	
 			s.quake = utils.quake({ app = awful.util.terminal })
-			s.panel = awful.wibar({ position = "top", screen = s, height = beautiful.panel_height or 17 })
+			s.panel = awful.wibar({ position = "top", screen = s, height = beautiful.panel_height or 17, visible  = false})
 			s.panel:setup {
 							layout = wibox.layout.align.horizontal,
 							{ 
