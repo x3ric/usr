@@ -1,9 +1,8 @@
 
 if [[ (-z $tty) || (! -z $TMUX) ]] ; then # tty promt
-  source /$HOME/.local/zsh/Internal/p10k.zsh
-  source /usr/share/zsh-theme-powerlevel10k/powerlevel10k.zsh-theme # dep (AUR) zsh-theme-powerlevel10k-bin-git
+  PS1='%F{green}%~%F{cyan}❯ %f'
 else
-  PS1='%F{green}['$USER'%F{yellow}@%F{blue}%~%F{green}]%F{reset}%# '
+  PS1='%F{green}'$USER'%F{yellow}@%F{green}%~%F{cyan}❯ %f'
 fi
 
 [ -f "$HOME/.local/zsh/private" ] && source "$HOME/.local/zsh/private"
