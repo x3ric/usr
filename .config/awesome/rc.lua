@@ -235,11 +235,11 @@
 			awful.button({}, 5, function() microphone.widget:change_volume({ down = true }) end)
 		)
 	-- Desktop
-		local desktop  = require("lib.widgets.desktop.icons")
+		--local desktop  = require("lib.widgets.desktop.icons")
 		awful.screen.connect_for_each_screen(function(s) awful.tag(taglist.names, s, taglist.layouts)
-			if s.index == 1 then -- make icons work only on 1st screen
-				desktop.add_icons({screen = s,open_with="Thunar",showlabels = true,menu = mymenu.mainmenu,})
-			end
+			--if s.index == 1 then -- make icons work only on 1st screen
+			--	desktop.add_icons({screen = s,open_with="Thunar",showlabels = true,menu = mymenu.mainmenu,})
+			--end
 			env.wallpaper(s)
 			layoutbox[s] = widget.layoutbox({ screen = s })
 			taglist[s] = widget.taglist({ screen = s, buttons = taglist.buttons, hint = env.tagtip, layout = taglist.layout }, taglist.style)
