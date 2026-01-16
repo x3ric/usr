@@ -1,6 +1,11 @@
 export PATH="$PATH:/$HOME/.local/share/bin"
 export PATH="$PATH:/$HOME/.config/emacs/bin"
-export PATH="$PATH:$HOME/.local/share/gem/ruby/$(\ls "$HOME/.local/share/gem/ruby/" | tail -n 1)/bin"
+if [ -d "$HOME/.local/share/gem/ruby/" ]; then
+    latest_gem_path=$(ls "$HOME/.local/share/gem/ruby/" 2>/dev/null | tail -n 1)
+    if [ -n "$latest_gem_path" ]; then
+        export PATH="$PATH:$HOME/.local/share/gem/ruby/$latest_gem_path/bin"
+    fi
+fi
 export PATH="$PATH:$HOME/.local/bin"
 export PATH="$PATH:$HOME/.local/share/go/bin"
 export LAYOUT="setxkbmap -query | awk '/layout:/ {print $2}'"
