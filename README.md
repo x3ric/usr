@@ -1,5 +1,9 @@
 <div align="center">
 
+# usr
+
+> Note: these are my personal dotfiles, and some configurations reflect my preferences.
+
 ### Install
   
 ```
