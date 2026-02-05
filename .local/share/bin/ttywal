@@ -33,7 +33,9 @@ if ! grep -qE '^HOOKS=.*(\(|\s)sd-colors(\s|\))' /etc/mkinitcpio.conf; then
     if ! pacman -Qs mkinitcpio-colors-git > /dev/null; then
         yay -S --noconfirm mkinitcpio-colors-git
     fi
-    echo 'check /etc/mkinitcpio.conf and make colors after udev/systemd'
+    echo 'check /etc/mkinitcpio.conf and make colors after udev/systemd like HOOK=(systemd sd-colors...)'
+    echo 'note tath the hook "base" is redundant with systemd'
+    
     sudo chmod a+rw /etc/vconsole.conf
 
     sudo systemctl enable setcolors.service
