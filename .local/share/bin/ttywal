@@ -25,13 +25,18 @@ else
     sleep 3
     echo "$TEMP_COLORS" > "$HOME/.cache/ttywal"
   else
-    sudo setvtrgb "$TEMP_COLORS"
+    sudo setvtrgb "$HOME/.cache/ttywal"
   fi
 fi
-if ! grep -q '^HOOKS=.*\bcolors\b' /etc/mkinitcpio.conf; then
-    sudo sed -i '/^HOOKS=/ s/\(udev \)/\1colors /' /etc/mkinitcpio.conf
-    yay -S --noconfirm mkinitcpio-colors-git
-    echo "Custom hook for color added to initramfs configuration."
+if ! grep -qE '^HOOKS=.*(\(|\s)sd-colors(\s|\))' /etc/mkinitcpio.conf; then
+    sudo sed -i 's/^HOOKS=(/&sd-olors /' /etc/mkinitcpio.conf
+    if ! pacman -Qs mkinitcpio-colors-git > /dev/null; then
+        yay -S --noconfirm mkinitcpio-colors-git
+    fi
+    echo 'check /etc/mkinitcpio.conf and make colors after udev/systemd'
+    sudo chmod a+rw /etc/vconsole.conf
+
+    sudo systemctl enable setcolors.service
 else
   if [ -f "/etc/vconsole.conf" ]; then
     line_number=0
