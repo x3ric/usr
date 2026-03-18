@@ -42,8 +42,24 @@ return {
     end,
   },--]]
   { -- multiline cursor
-    "mg979/vim-visual-multi",
-    event = { "BufReadPost", "BufNewFile" },
+    "smoka7/multicursors.nvim",
+    event = "VeryLazy",
+    dependencies = { "nvimtools/hydra.nvim" },
+    opts = {},
+    cmd = { 'MCstart', 'MCvisual', 'MCclear', 'MCpattern', 'MCvisualPattern', 'MCunderCursor' },
+    keys = {
+      -- Start multicursor on word under cursor or visual selection
+      { "n", "<Leader>c", "<cmd>MCstart<cr>", desc = "Start multicursor" },
+      { "v", "<Leader>c", "<cmd>MCstart<cr>", desc = "Start multicursor on visual" },
+    },
+    opts = {
+      hint_config = {
+        float_opts = { border = "rounded" },
+        position = "bottom-right",
+      },
+      generate_hints = { normal = true, insert = true, extend = true, config = { column_count = 1 } },
+      mode_keys = { append = "a", change = "c", extend = "e", insert = "i" },
+    },
   },
   --[[{ -- :Glow to have markdown preview
     "ellisonleao/glow.nvim", 

@@ -16,15 +16,15 @@ local options = {
   pumheight = 10, -- pop up menu height
   showmode = false, -- we don't need to see things like -- INSERT -- anymore
   showtabline = 2, -- always show tabs
-  -- smartcase = true,                        -- smart case
+  smartcase = true, -- smart case
   smartindent = true, -- make indenting smarter again
   splitbelow = true, -- force all horizontal splits to go below current window
   splitright = true, -- force all vertical splits to go to the right of current window
   swapfile = false, -- creates a swapfile
   termguicolors = true, -- set term gui colors (most terminals support this)
   timeoutlen = 100, -- time to wait for a mapped sequence to complete (in milliseconds)
-  -- undofile = true,                         -- enable persistent undo
-  updatetime = 500, -- faster completion (4000ms default)
+  undofile = true, -- enable persistent undo
+  updatetime = 300, -- faster completion (4000ms default)
   wildmode = "longest:full,full", -- Command-line completion mode
   writebackup = false, -- if a file is being edited by another program (or was written to file while editing with another program), it is not allowed to be edited
   expandtab = true, -- convert tabs to spaces
@@ -50,7 +50,7 @@ local options = {
   titlestring = "nvim %<%F%=%l/%L",
   linespace = 8,
   mousemoveevent = true,
-  syntax = "off",
+  -- syntax = "off",
   spelllang = { "en" },
   -- use fold
   foldlevelstart = 99,
@@ -67,6 +67,9 @@ local options = {
   },
   -- session
   sessionoptions = { "buffers", "curdir", "tabpages", "winsize" },
+
+  grepprg = "rg --vimgrep",
+
 }
 vim.g.loaded_netrw = 1
 vim.g.loaded_netrwPlugin = 1
@@ -94,6 +97,13 @@ vim.cmd("set whichwrap+=<,>,[,]")
 vim.cmd([[set iskeyword+=-]])
 -- diable open fold with `l`
 vim.cmd([[set foldopen-=hor]])
+
+
+-- Neovide
+
+vim.g.neovide_opacity = 0.8
+vim.g.neovide_normal_opacity = 0.8
+vim.g.neovide_window_blurred = true
 
 if vim.g.neovide then
   vim.opt.guifont = "Cascadia Code:h10" -- the font used in graphical neovim applications
