@@ -2,34 +2,60 @@ python
 import sys
 import os
 import gdb
-import time
 
 sys.tracebacklimit = 0
 
 class SilentWriter:
     def write(self, text):
         pass
+
     def flush(self):
         pass
 
-silent_stdout = SilentWriter()
-original_stdout = sys.stdout
-sys.stdout = silent_stdout
-if os.path.isfile("/usr/share/pwndbg/gdbinit.py"):
-    gdb.execute("source /usr/share/pwndbg/gdbinit.py")
-else:
-    gdb.execute("source ~/.config/gdb/gef.py")
+def safe_execute(command):
+    try:
+        gdb.execute(command, from_tty=False)
+    except gdb.error:
+        pass
 
-gdb.execute("set breakpoint pending on")
-gdb.execute("set disassembly-flavor intel")
-gdb.execute("set complaints 0")
-gdb.execute("set show-tips off")
-gdb.execute("set verbose off")
-gdb.execute("set debuginfod enabled on")
-gdb.execute("set confirm off")
-gdb.execute("set startup-with-shell off")
-gdb.execute("set pagination off")
-#gdb.execute("set debuginfod enabled off")
+def has_loaded_file():
+    try:
+        return gdb.current_progspace().filename is not None
+    except gdb.error:
+        return False
 
-time.sleep(1)
-sys.stdout = original_stdout
+def source_pwndbg_or_gef():
+    old_stdout = sys.stdout
+    sys.stdout = SilentWriter()
+
+    try:
+        if os.path.isfile("/usr/share/pwndbg/gdbinit.py"):
+            gdb.execute("source /usr/share/pwndbg/gdbinit.py", from_tty=False)
+    except gdb.error:
+        pass
+    finally:
+        sys.stdout = old_stdout
+
+for cmd in [
+    "set breakpoint pending on",
+    "set disassembly-flavor intel",
+    "set complaints 0",
+    "set verbose off",
+    "set debuginfod enabled on",
+    "set confirm off",
+    "set startup-with-shell off",
+    "set pagination off",
+    "set python print-stack none",
+    "set show-tips off",
+]:
+    safe_execute(cmd)
+
+if has_loaded_file():
+    source_pwndbg_or_gef()
+end
+
+define hookpost-file
+python
+source_pwndbg_or_gef()
+end
+end
