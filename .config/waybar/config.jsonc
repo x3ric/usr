@@ -7,11 +7,15 @@
     "gtk-layer-shell": true,
     "reload_style_on_change": true,
     "height": 0,
+
     "modules-left": [
-        //"custom/weather",
         "hyprland/workspaces"
     ],
-    "modules-center": ["hyprland/window"],
+
+    "modules-center": [
+        "hyprland/window"
+    ],
+
     "modules-right": [
         "tray",
         "clock",
@@ -20,30 +24,34 @@
         "battery",
         "backlight",
         "pulseaudio",
-        "pulseaudio#microphone",
+        "pulseaudio#microphone"
     ],
+
     "hyprland/window": {
         "format": "{}"
     },
+
     "hyprland/workspaces": {
         "disable-scroll": true,
         "all-outputs": true,
         "on-click": "activate",
-        //"format": "{icon}",
+        "format": "{name}",
         "persistent_workspaces": {
             "1": [],
             "2": [],
-            "3": [],
+            "3": []
         }
     },
+
     "custom/updates": {
-        "format": " {}",
+        "format": " {}",
         "interval": 7200,
-        "exec": "i=$(checkupdates); echo \"$i\" |wc -l; echo \"$i\" |column -t |tr '\n' '\r'",
-        "exec-if": "exit 0",
+        "exec": "i=$(checkupdates 2>/dev/null); echo \"$i\" | wc -l; echo \"$i\" | column -t | tr '\\n' '\\r'",
+        "exec-if": "command -v checkupdates >/dev/null 2>&1",
         "on-click": "kitty -e sudo pacman -Syu",
         "signal": 8
     },
+
     "custom/weather": {
         "tooltip": true,
         "format": "{}",
@@ -51,22 +59,35 @@
         "exec": "~/.config/waybar/scripts/waybar-wttr.py",
         "return-type": "json"
     },
+
     "tray": {
         "icon-size": 13,
         "spacing": 10
     },
+
     "clock": {
-        "format": "{:%H:%M}",  // Simplified format for testing
-        "tooltip-format": "{:%Y-%m-%d}"
+        "format": " {:%H:%M}",
+        "tooltip-format": " {:%Y-%m-%d}"
     },
+
+    "custom/language": {
+        "format": "  IT",
+        "tooltip": false
+    },
+
     "backlight": {
         "device": "intel_backlight",
         "format": "{icon} {percent}%",
-        "format-icons": ["", "", ""],
+        "format-icons": [
+            "",
+            "",
+            ""
+        ],
         "on-scroll-up": "brightnessctl set +1% -n 1 -e",
         "on-scroll-down": "brightnessctl set 1%- -n 1 -e",
         "min-length": 6
     },
+
     "battery": {
         "states": {
             "good": 95,
@@ -74,11 +95,18 @@
             "critical": 20
         },
         "format": "{icon} {capacity}%",
-        "format-charging": " {capacity}%",
+        "format-charging": " {capacity}%",
         "format-plugged": " {capacity}%",
         "format-alt": "{time} {icon}",
-        "format-icons": ["", "", "", "", "", "", "", "", "", "", ""]
+        "format-icons": [
+            "",
+            "",
+            "",
+            "",
+            ""
+        ]
     },
+
     "pulseaudio": {
         "format": "{icon} {volume}%",
         "tooltip": false,
@@ -94,13 +122,18 @@
             "phone": "",
             "portable": "",
             "car": "",
-            "default": ["", "", ""]
+            "default": [
+                "",
+                "",
+                ""
+            ]
         }
     },
+
     "pulseaudio#microphone": {
         "format": "{format_source}",
-        "format-source": " {volume}%",
-        "format-source-muted": " Muted",
+        "format-source": " {volume}%",
+        "format-source-muted": " Muted",
         "on-click": "pamixer --default-source -t",
         "on-scroll-up": "pamixer --default-source -i 5",
         "on-scroll-down": "pamixer --default-source -d 5",
