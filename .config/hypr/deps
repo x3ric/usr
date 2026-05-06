@@ -5,6 +5,8 @@ packages=(
     thunar
     wl-clipboard
     wf-recorder
+    cliphist
+    nwg-clipman
     swaybg
     grimblast-git
     ffmpegthumbnailer
