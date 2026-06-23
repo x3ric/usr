@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+set -euo pipefail
+export XDG_SESSION_TYPE=wayland
+export XDG_CURRENT_DESKTOP=Hyprland
+export XDG_SESSION_DESKTOP=Hyprland
+export GDK_BACKEND=wayland,x11
+export QT_QPA_PLATFORM='wayland;xcb'
+export MOZ_ENABLE_WAYLAND=1
+export XCURSOR_THEME="${XCURSOR_THEME:-cz-Hickson-Black}"
+export XCURSOR_SIZE="${XCURSOR_SIZE:-24}"
+export HYPRCURSOR_THEME="${HYPRCURSOR_THEME:-cz-Hickson-Black}"
+export HYPRCURSOR_SIZE="${HYPRCURSOR_SIZE:-24}"
+if command -v uwsm >/dev/null 2>&1 && uwsm check may-start >/dev/null 2>&1; then
+    exec systemd-cat -t uwsm_start uwsm start hyprland.desktop
+fi
+if command -v dbus-run-session >/dev/null 2>&1; then
+    exec dbus-run-session Hyprland
+fi
+exec Hyprland

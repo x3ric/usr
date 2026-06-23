@@ -1,0 +1,11 @@
+#!/bin/sh
+# Bashisms in path checker
+need checkbashisms
+if [ -z "$1" ]; then
+    echo "Enter the path to search for bashisms: "
+    read -r path
+else
+    path="$1"
+fi
+trap 'return 1' INT   
+IFS=: sudo grep -Irl '#!/bin/sh' "$path" | xargs -r checkbashisms

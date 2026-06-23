@@ -1,10 +1,12 @@
-#!/bin/bash
-# Gtk accent color set for darkarch
-COLORS=($(cat ~/.cache/wal/colors))
-I=3
-if [ -n "${COLORS[$I]}}" ]; then
-    echo "Accent color of gtk darkarch changed to ${COLORS[$I]}"
-    sed -i "s/@define-color accent #[^;]*;/@define-color accent ${COLORS[$I]};/g" $HOME/.themes/darkarch/gtk-3.0/gtk.css
-else
-    echo "No color $I found in colors-kitty.conf"
+#!/usr/bin/env bash
+set -u
+colors="$HOME/.cache/wal/colors"
+css="$HOME/.themes/darkarch/gtk-3.0/gtk.css"
+idx=3
+[[ -r "$colors" && -w "$css" ]] || exit 0
+mapfile -t COLORS < "$colors"
+accent="${COLORS[$idx]:-}"
+if [[ -n "$accent" ]]; then
+    echo "Accent color of gtk darkarch changed to $accent"
+    sed -i "s/@define-color accent #[^;]*;/@define-color accent ${accent};/g" "$css"
 fi

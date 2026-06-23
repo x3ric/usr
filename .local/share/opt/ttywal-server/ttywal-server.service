@@ -2,7 +2,7 @@
 Description=Write Address Service
 
 [Service]
-ExecStart=/usr/local/bin/ttywal-server /home/e/
+ExecStart=/usr/local/bin/ttywal-server %h/
 User=root
 Group=root
 Restart=always

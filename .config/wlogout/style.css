@@ -1,0 +1,31 @@
+* {
+  background-image: none;
+  box-shadow: none;
+  font-family: FiraCode Nerd Font, Fira Code, monospace;
+  font-size: 16px;
+}
+window { background-color: rgba(11, 11, 11, 0.76); }
+button {
+  color: #c0acd1;
+  background-color: rgba(72, 83, 74, 0.50);
+  border: 2px solid rgba(192, 172, 209, 0.24);
+  border-radius: 18px;
+  margin: 14px;
+  min-width: 140px;
+  min-height: 120px;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 30%;
+  transition: 120ms ease-in-out;
+}
+button:hover, button:focus {
+  color: #0b0b0b;
+  background-color: #c0acd1;
+  border-color: #658B5F;
+}
+#lock { background-color: rgba(81, 109, 85, 0.56); }
+#logout { background-color: rgba(91, 91, 105, 0.56); }
+#suspend { background-color: rgba(101, 139, 95, 0.56); }
+#hibernate { background-color: rgba(86, 79, 150, 0.56); }
+#shutdown { background-color: rgba(100, 91, 151, 0.56); }
+#reboot { background-color: rgba(134, 120, 146, 0.56); }

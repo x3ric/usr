@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+layout=$(hyprctl getoption general:layout -j | jq -r '.str' 2>/dev/null || echo "dwindle")
+mfact=$(hyprctl getoption master:mfact -j 2>/dev/null | jq -r '.float' 2>/dev/null || echo "0.5")
+
+is_max=false
+[ "$layout" = "master" ] && awk "BEGIN{exit($mfact >= 0.94 ? 0 : 1)}" && is_max=true
+
+if $is_max; then
+    hyprctl dispatch layoutmsg swapwithmaster
+else
+    hyprctl dispatch fullscreenstate 2
+fi

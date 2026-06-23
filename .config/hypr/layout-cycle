@@ -1,0 +1,45 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+MAX_PID="/tmp/hypr-max.pid"
+MAX_DAEMON="${HOME}/.config/hypr/maxd"
+
+kill_maxd() {
+    if [ -f "$MAX_PID" ]; then
+        pid=$(cat "$MAX_PID" 2>/dev/null || echo "")
+        [ -n "$pid" ] && kill "$pid" 2>/dev/null || true
+        rm -f "$MAX_PID"
+    fi
+    rm -f "/tmp/hypr-max.active"
+}
+
+current=$(hyprctl getoption general:layout -j | jq -r '.str' 2>/dev/null || echo "dwindle")
+mfact=$(hyprctl getoption master:mfact -j 2>/dev/null | jq -r '.float' 2>/dev/null || echo "0.5")
+
+is_max=false
+[ "$current" = "master" ] && awk "BEGIN{exit($mfact >= 0.94 ? 0 : 1)}" && is_max=true
+
+case "$current" in
+    dwindle)
+        hyprctl keyword general:layout master
+        notify-send -t 800 "Layout: master"
+        ;;
+    master)
+        if $is_max; then
+            kill_maxd
+            hyprctl keyword master:mfact 0.65
+            hyprctl keyword general:layout dwindle
+            notify-send -t 800 "Layout: dwindle"
+        else
+            kill_maxd
+            hyprctl keyword master:mfact 0.95
+            nohup "$MAX_DAEMON" >/dev/null 2>&1 &
+            notify-send -t 800 "Layout: max"
+        fi
+        ;;
+    *)
+        kill_maxd
+        hyprctl keyword general:layout dwindle
+        notify-send -t 800 "Layout: dwindle"
+        ;;
+esac

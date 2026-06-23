@@ -1,0 +1,11 @@
+#!/bin/env bash
+# Toggle a sshd server in port 22
+serv="sshd.service"
+state=$(sudo systemctl is-enabled $serv)
+if [[ $state == "disabled" ]]; then 
+    sudo systemctl enable $serv
+    sudo systemctl start $serv
+else
+    sudo systemctl stop $serv
+    sudo systemctl disable $serv
+fi

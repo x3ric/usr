@@ -1,0 +1,69 @@
+#!/bin/zsh -i
+# copy dirs/files to paste in other dir
+need xclip
+display_list=false
+clear_list=false
+while getopts ":lch" opt; do
+  case $opt in
+    l)
+      display_list=true
+      ;;
+    c)
+      clear_list=true
+      ;;
+    h)
+      echo "Usage: copy [-l] [-c] [files/directories...]"
+      echo "Options:"
+      echo "  -l    Display the list of previously copied items"
+      echo "  -c    Clear the list of copied items"
+      echo "  -h    Show this help message"
+      exit 0
+      ;;
+    ?)
+      echo "Invalid option: -$OPTARG"
+      exit 1
+      ;;
+  esac
+done
+shift $((OPTIND -1))
+if $display_list; then
+  if [[ ${#copied[@]} -eq 0 ]]; then
+    echo "No items have been copied yet."
+  else
+    echo "Previously copied items:"
+    printf '%s\n' "${copied[@]}"
+  fi
+  exit 0
+fi
+if $clear_list; then
+  copied=()
+  echo "Cleared the list of copied items."
+  exit 0
+fi
+if [[ $# -eq 0 ]]; then
+  selected_items=$(ls -A | fzf-splitted --multi)
+  if [[ -n $selected_items ]]; then
+    while IFS= read -r item; do
+      source=$(realpath "$item")
+      if [[ -e $source ]]; then
+        copied+=("$source")
+        echo "Copied: $source"
+        echo -n "$source" | xclip -selection clipboard
+      else
+        echo "The specified path does not exist: $source"
+      fi
+    done <<< "$selected_items"
+  fi
+  exit 0
+fi
+while [[ $# -gt 0 ]]; do
+  source=$(realpath "$1")
+  if [[ ! -e $source ]]; then
+    echo "The specified path does not exist: $source"
+  else
+    copied+=("$source")
+    echo "Copied: $source"
+    echo -n "$source" | xclip -selection clipboard
+  fi
+  shift
+done

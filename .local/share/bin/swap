@@ -1,0 +1,37 @@
+#!/bin/bash
+# Swap partition maker using parted and gnome-disk-utility for btrfs
+need gnome-disk-utility
+need parted
+need bc
+need btrfs-progs
+DK=$(df / | awk 'NR==2 {print $1}' | cut -d '/' -f 3 | sed 's/p[0-9]*$//')
+PART="4"
+DISK=''$DK'p'$PART''
+if ! sudo parted -s /dev/$DISK print > /dev/null 2>&1; then
+    echo "shrink main partition to leave space for swap "$DK"p3"
+    gnome-disks &> /dev/null
+    start=$(sudo parted /dev/"$DK"p3 unit MiB print devices | grep -oP '/dev/'$DK'p3 \((\d+)' | awk -F '[()]' '{print $2}')
+    sudo parted /dev/$DK mkpart primary linux-swap $start 100%
+    sudo mkswap /dev/$DISK
+    sudo swapon /dev/$DISK
+fi
+if ! cat /etc/systemd/logind.conf | grep "^H" &> /dev/null; then # sets hibernation on lid close
+    echo -e "HandleLidSwitch=hibernate\nHandleLidSwitchExternalPower=hibernate\nLidSwitchIgnoreInhibited=yes" | sudo tee -a /etc/systemd/logind.conf
+fi
+if ! grep -qFx '/dev/'$DISK' none swap sw 0 0' /etc/fstab &> /dev/null; then
+    sudo sed -i '$ a/dev/'$DISK' none swap sw 0 0' /etc/fstab
+fi
+if ! grep 'resume' /etc/mkinitcpio.conf &> /dev/null; then
+    sudo sed -i '/^HOOKS=/ s/\bautodetect\b/& resume/' /etc/mkinitcpio.conf
+    sudo mkinitcpio -p linux
+fi
+if ! grep 'resume' /etc/default/grub &> /dev/null; then
+    sudo sed -i '/^GRUB_CMDLINE_LINUX_DEFAULT=/ s/"$/ resume=\/dev\/'$DISK'"/' /etc/default/grub
+    sudo \grub-mkconfig -o /boot/grub/grub.cfg
+fi
+if pacman -Q zram-generator &> /dev/null; then
+    if ! pacman -Q zram-hibernate-git &> /dev/null; then
+        yay -S --needed zram-hibernate-git
+    fi
+    echo -e "KERNEL_SWAP_DEVICE=/dev/$DISK" | sudo tee /etc/zram-hibernate.conf
+fi

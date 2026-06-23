@@ -14,7 +14,7 @@ clean:
 
 install:
 	make
-	sed -i "s|/home/e|$(HOME)|g" ttywal-server.service
+	sed -i "s|%h|$(HOME)|g" ttywal-server.service
 	sudo touch $(HOME)/.cache/ttywal
 	sudo chmod a+rw $(HOME)/.cache/ttywal
 	sudo install -m 755 ttywal-server $(PREFIX)/bin

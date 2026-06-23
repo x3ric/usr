@@ -22,6 +22,7 @@ case "$url" in
             feh "$tmp_file"
         else
             #echo "Failed to download image."
+            :
         fi
         ;;
     *)

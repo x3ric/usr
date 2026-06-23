@@ -210,9 +210,11 @@ change_color() {
 				[ -L "$file_path" ] && continue  # is not a symlink
 				file_name="${file_path##*/}"
 				symlink_path="${file_path/-$color/}"  # remove color suffix
-				sudo ln -sf "$file_name" "$symlink_path" || {
-					fatal "Fail to create '$symlink_path' symlink"
-				}
+				if _is_user_dir || _is_writable; then
+					ln -sf "$file_name" "$symlink_path" || fatal "Fail to create '$symlink_path' symlink"
+				else
+					sudo ln -sf "$file_name" "$symlink_path" || fatal "Fail to create '$symlink_path' symlink"
+				fi
 			done
 		done
 	done

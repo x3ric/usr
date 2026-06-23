@@ -1,0 +1,40 @@
+#!/bin/zsh -i
+# Serial usb reader
+if ! [[ "$1" == "--help" || "$1" == "-h" ]]; then
+    need screen
+    local baud_rates=("300" "1200" "2400" "4800" "9600" "14400" "19200" "38400" "57600" "115200" "230400" "460800" "921600")
+    serial_ports=($(find /dev -type c \( -name 'ttyUSB*' -o -name 'ttyACM*' \)))
+    if [[ ${#serial_ports[@]} -eq 1 ]]; then
+        serial_port="${serial_ports[@]}"
+        echo "Connecting to > ${serial_ports[@]}"
+    elif [[ ${#serial_ports[@]} -gt 1 ]]; then
+        chosen_port=$(printf "%s\n" "${serial_ports[@]}" | fzf-splitted --prompt='Select Serial Port > ')
+        serial_port="$chosen_port"
+    else
+        echo "Serial not found. Aborting."
+        return 1
+    fi
+    local baud_rate=$(printf "%s\n" "${baud_rates[@]}" | fzf-splitted --prompt='Select Baud Rate > ')
+    if [[ -z $serial_port || ! -e "$serial_port" || -z $baud_rate ]]; then
+        echo "Invalid selection. Aborting."
+        return 1
+    fi
+    sudo chmod a+rw $serial_port
+    udev-fix
+    if [ "$1" != "-a" ]; then
+        sudo screen "$serial_port" "$baud_rate" $1
+        sudo killall screen 2>/dev/null
+    else
+        need arduino-cli
+        arduino-cli monitor -p "$serial_port" -l serial -c baudrate="$baud_rate" --raw -q $2
+    fi        
+    echo "Serial communication ended."
+else
+    echo -e "-a = to use arduino monitor"
+    if [ "$2" != "-a" ]; then
+        screen -h
+    else
+        need arduino-cli
+        arduino-cli monitor --help
+    fi
+fi

@@ -6,6 +6,7 @@ if [[ -z $1 ]];then
 else
     conf=$1
 fi
+need awesome
 Xephyr :3 -ac -screen 1920x1080 &
 XEPHYR_PID=$!
 sleep 0.5

@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+MAX_PID="/tmp/hypr-max.pid"
+MAX_FLAG="/tmp/hypr-max.active"
+
+cleanup() {
+    rm -f "$MAX_FLAG" "$MAX_PID"
+    exit 0
+}
+trap cleanup EXIT INT TERM
+
+echo "$$" > "$MAX_PID"
+touch "$MAX_FLAG"
+
+last=""
+while true; do
+    if [ -f "$MAX_FLAG" ]; then
+        current=$(hyprctl activewindow -j 2>/dev/null | jq -r '.address // empty' 2>/dev/null || true)
+        if [ -n "$current" ] && [ "$current" != "$last" ]; then
+            last="$current"
+            hyprctl dispatch layoutmsg swapwithmaster 2>/dev/null || true
+        fi
+        sleep 0.12
+    else
+        last=""
+        sleep 1
+    fi
+done

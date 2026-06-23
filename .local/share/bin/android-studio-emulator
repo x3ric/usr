@@ -1,0 +1,3 @@
+#!/bin/bash
+# android emulator cli
+/opt/android-studio-sdk/emulator/emulator -avd "$(/opt/android-studio-sdk/emulator/emulator -list-avds | tail -n 1)" -no-metrics

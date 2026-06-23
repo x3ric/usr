@@ -6,10 +6,11 @@
     "passthrough": false,
     "gtk-layer-shell": true,
     "reload_style_on_change": true,
-    "height": 0,
+    "height": 26,
 
     "modules-left": [
-        "hyprland/workspaces"
+        "hyprland/workspaces",
+        "custom/layout"
     ],
 
     "modules-center": [
@@ -17,30 +18,59 @@
     ],
 
     "modules-right": [
-        "tray",
-        "clock",
         "custom/updates",
-        "custom/language",
+        "custom/sysmon",
         "battery",
-        "backlight",
+        "network",
         "pulseaudio",
-        "pulseaudio#microphone"
+        "pulseaudio#microphone",
+        "clock",
+        "tray"
     ],
 
     "hyprland/window": {
-        "format": "{}"
+        "format": "{}",
+        "max-length": 32,
+        "on-click": "~/.config/hypr/hide h",
+        "on-click-right": "~/.config/hypr/hide s",
+        "on-scroll-up": "hyprctl dispatch cyclenext",
+        "on-scroll-down": "hyprctl dispatch focusurgentorlast"
     },
 
     "hyprland/workspaces": {
-        "disable-scroll": true,
         "all-outputs": true,
-        "on-click": "activate",
         "format": "{name}",
+        "on-click": "activate",
         "persistent_workspaces": {
             "1": [],
             "2": [],
-            "3": []
+            "3": [],
+            "4": [],
+            "5": []
         }
+    },
+
+    "custom/layout": {
+        "format": "{}",
+        "interval": 2,
+        "exec": "~/.config/waybar/scripts/layout.sh",
+        "return-type": "json",
+        "on-click": "~/.config/hypr/layout-click",
+        "on-click-right": "~/.config/hypr/desktop-menu.sh",
+        "on-scroll-up": "~/.config/hypr/layout-cycle",
+        "on-scroll-down": "~/.config/hypr/layout-cycle",
+        "signal": 3
+    },
+
+    "custom/sysmon": {
+        "format": "{}",
+        "interval": 5,
+        "exec": "~/.config/waybar/scripts/sysmon.sh",
+        "return-type": "json",
+        "tooltip": true,
+        "on-click": "kitty --start-as maximized btop",
+        "on-scroll-up": "hyprctl dispatch workspace +1",
+        "on-scroll-down": "hyprctl dispatch workspace -1"
     },
 
     "custom/updates": {
@@ -52,69 +82,54 @@
         "signal": 8
     },
 
-    "custom/weather": {
-        "tooltip": true,
-        "format": "{}",
-        "interval": 30,
-        "exec": "~/.config/waybar/scripts/waybar-wttr.py",
-        "return-type": "json"
-    },
-
-    "tray": {
-        "icon-size": 13,
-        "spacing": 10
-    },
-
-    "clock": {
-        "format": " {:%H:%M}",
-        "tooltip-format": " {:%Y-%m-%d}"
-    },
-
-    "custom/language": {
-        "format": "  IT",
-        "tooltip": false
-    },
-
-    "backlight": {
-        "device": "intel_backlight",
-        "format": "{icon} {percent}%",
-        "format-icons": [
-            "",
-            "",
-            ""
-        ],
-        "on-scroll-up": "brightnessctl set +1% -n 1 -e",
-        "on-scroll-down": "brightnessctl set 1%- -n 1 -e",
-        "min-length": 6
-    },
-
     "battery": {
         "states": {
             "good": 95,
             "warning": 30,
             "critical": 20
         },
-        "format": "{icon} {capacity}%",
-        "format-charging": " {capacity}%",
-        "format-plugged": " {capacity}%",
-        "format-alt": "{time} {icon}",
-        "format-icons": [
-            "",
-            "",
-            "",
-            "",
-            ""
-        ]
+        "format": "{icon}",
+        "format-charging": "",
+        "format-plugged": "",
+        "format-alt": "{icon} {capacity}%",
+        "tooltip": true,
+        "tooltip-format": "{capacity}% {time} {icon}",
+        "format-icons": ["", "", "", "", ""],
+        "on-scroll-up": "hyprctl dispatch workspace +1",
+        "on-scroll-down": "hyprctl dispatch workspace -1"
+    },
+
+    "network": {
+        "format": "{icon}",
+        "format-icons": ["󰤯", "󰤟", "󰤢", "󰤥", "󰤨"],
+        "format-ethernet": "󰈁",
+        "format-disconnected": "󰤭",
+        "tooltip": true,
+        "tooltip-format": "{ipaddr}/{cidr}  {signalStrength}%  {frequency}GHz",
+        "on-scroll-up": "hyprctl dispatch workspace +1",
+        "on-scroll-down": "hyprctl dispatch workspace -1"
+    },
+
+    "tray": {
+        "icon-size": 10,
+        "spacing": 3
+    },
+
+    "clock": {
+        "format": " {:%I:%M %p}",
+        "tooltip-format": " {:%Y-%m-%d}",
+        "on-click": "gnome-calendar || kitty -e cal",
+        "on-scroll-up": "hyprctl dispatch workspace +1",
+        "on-scroll-down": "hyprctl dispatch workspace -1"
     },
 
     "pulseaudio": {
         "format": "{icon} {volume}%",
-        "tooltip": false,
-        "format-muted": " Muted",
-        "on-click": "pamixer -t",
-        "on-scroll-up": "pamixer -i 5",
-        "on-scroll-down": "pamixer -d 5",
-        "scroll-step": 5,
+        "format-muted": " {volume}%",
+        "on-click": "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle",
+        "on-click-right": "pavucontrol",
+        "on-scroll-up": "wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%+",
+        "on-scroll-down": "wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-",
         "format-icons": {
             "headphone": "",
             "hands-free": "",
@@ -122,21 +137,17 @@
             "phone": "",
             "portable": "",
             "car": "",
-            "default": [
-                "",
-                "",
-                ""
-            ]
+            "default": ["", "", ""]
         }
     },
 
     "pulseaudio#microphone": {
         "format": "{format_source}",
         "format-source": " {volume}%",
-        "format-source-muted": " Muted",
-        "on-click": "pamixer --default-source -t",
-        "on-scroll-up": "pamixer --default-source -i 5",
-        "on-scroll-down": "pamixer --default-source -d 5",
-        "scroll-step": 5
+        "format-source-muted": " {volume}%",
+        "on-click": "wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle",
+        "on-click-right": "pavucontrol -t 2",
+        "on-scroll-up": "wpctl set-volume @DEFAULT_AUDIO_SOURCE@ 5%+",
+        "on-scroll-down": "wpctl set-volume @DEFAULT_AUDIO_SOURCE@ 5%-"
     }
 }

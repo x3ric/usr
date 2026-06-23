@@ -3,7 +3,7 @@
 
 # Command line head / tail shortcuts
   alias t='tail -f'
-  if [ -z $BASH ]; then
+  if [ -z "${BASH:-}" ]; then
     alias -g H='| head'
     alias -g T='| tail'
     alias -g G='| grep'
@@ -40,8 +40,6 @@
   alias cbat='_cbat() { highlight --force -i $1 | bat }; _cbat'
   alias icat='kitty +kitten icat'
 # Fzf utils
-  alias fzf='fzf --color=bg+:234'
-  alias fzf-tmux='fzf-tmux --color=bg+:234'
   alias fzf-file='x=$(fzf-splitted) && xdg-open $x'
   alias fzf-dir='x=$(find . -type d -print 2>/dev/null | fzf-splitted) && thunar ${x%/*}'
   alias fzf-dircd='x=$(find . -type d -print 2>/dev/null | fzf-splitted) && cd ${x%/*}'
@@ -120,9 +118,6 @@
   alias envrc='${=EDITOR} ~/.local/zsh/envrc'
   alias inputrc='${=EDITOR} ~/.local/zsh/inputrc'
   alias comprc='${=EDITOR} ~/.local/zsh/comprc'
-# Awesome 
-  alias awesome-refresh='awesome-client "awesome.restart()"'
-  alias awesome-refresh-auto='drun awesome-refresh "$HOME/.config/awesome"'
 # Gtk3-nocsd
  alias gnome-disks='GTK_CSD=0 LD_PRELOAD=/usr/lib/libgtk3-nocsd.so.0 gnome-disks'
  alias firefox='GTK_CSD=0 LD_PRELOAD=/usr/lib/libgtk3-nocsd.so.0 firefox'

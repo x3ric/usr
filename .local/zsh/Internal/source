@@ -1,26 +1,38 @@
 
-if [[ (-z $tty) || (! -z $TMUX) ]] ; then # tty promt
-  PS1='%F{green}%~%F{cyan}❯ %f'
+if [[ (-z ${tty:-}) || (-n ${TMUX:-}) ]] ; then # tty prompt
+  PS1='%F{#658B5F}%~%F{#c0acd1}❯ %f'
 else
-  PS1='%F{green}'$USER'%F{yellow}@%F{green}%~%F{cyan}❯ %f'
+  PS1='%F{#658B5F}'$USER'%F{#c0acd1}@%F{#658B5F}%~%F{#c0acd1}❯ %f'
 fi
 
-[ -f "$HOME/.local/zsh/private" ] && source "$HOME/.local/zsh/private"
-[ ! -d "$HOME/.local/share/gnupg" ] && mkdir -p "$HOME/.local/share/gnupg"
-[ -f "$HOME/.local/zsh/envrc" ] && source "$HOME/.local/zsh/envrc"
-[ -f "$HOME/.local/zsh/aliasrc" ] && source "$HOME/.local/zsh/aliasrc"
-[ -f "$HOME/.local/zsh/funcrc" ] && source "$HOME/.local/zsh/funcrc"
-[ -f "$HOME/.local/zsh/comprc" ] && source "$HOME/.local/zsh/comprc"
-[ -f "$HOME/.local/zsh/comprc" ] && source "$HOME/.local/zsh/inputrc"
+_archx_source() { [[ -r "$1" ]] && source "$1" }
 
-source /usr/share/zsh/plugins/zsh-autosuggestions/zsh-autosuggestions.zsh 2>/dev/null # dep (EXTRA) zsh-autosuggestions
-source /usr/share/zsh/plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh 2>/dev/null # dep (EXTRA) zsh-syntax-highlighting
+_archx_source "$HOME/.local/zsh/private"
+[[ -d "$HOME/.local/share/gnupg" ]] || mkdir -p "$HOME/.local/share/gnupg" 2>/dev/null
+_archx_source "$HOME/.local/zsh/envrc"
+_archx_source "$HOME/.cache/wal/colors-fzf.zsh"
+_archx_source "$HOME/.local/zsh/aliasrc"
+_archx_source "$HOME/.local/zsh/funcrc"
+_archx_source "$HOME/.local/zsh/comprc"
+_archx_source "$HOME/.local/zsh/inputrc"
+
+_archx_source /usr/share/zsh/plugins/zsh-autosuggestions/zsh-autosuggestions.zsh # dep (EXTRA) zsh-autosuggestions
+_archx_source /usr/share/zsh/plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh # dep (EXTRA) zsh-syntax-highlighting
 [[ -s /etc/profile.d/autojump.sh ]] && source /etc/profile.d/autojump.sh 2>/dev/null # dep (EXTRA) autojump
 
-source /$HOME/.local/zsh/Internal/async.zsh
-source /$HOME/.local/zsh/Internal/fzf-tab.zsh
-source /$HOME/.local/zsh/Internal/fzf-key-bindings.zsh
-source /$HOME/.local/zsh/Internal/fzf-completion.zsh
-source /$HOME/.local/zsh/Internal/bgnotify.zsh
-source /$HOME/.local/zsh/Internal/zsh-autoquoter.zsh
-source /$HOME/.local/zsh/Internal/nice-exit-code.zsh
+_archx_source "$HOME/.local/zsh/Internal/async.zsh"
+_archx_source "$HOME/.local/zsh/Internal/fzf-tab.zsh"
+_archx_source "$HOME/.local/zsh/Internal/fzf-key-bindings.zsh"
+_archx_source "$HOME/.local/zsh/Internal/fzf-completion.zsh"
+_archx_source "$HOME/.local/zsh/Internal/bgnotify.zsh"
+_archx_source "$HOME/.local/zsh/Internal/zsh-autoquoter.zsh"
+_archx_source "$HOME/.local/zsh/Internal/nice-exit-code.zsh"
+
+# Make sure Ctrl+R is the old fzf history widget when fzf is installed.
+if [[ -o interactive ]] && command -v fzf >/dev/null 2>&1; then
+  bindkey -M emacs '^R' fzf-history-widget 2>/dev/null || true
+  bindkey -M viins '^R' fzf-history-widget 2>/dev/null || true
+  bindkey -M vicmd '^R' fzf-history-widget 2>/dev/null || true
+fi
+
+unfunction _archx_source 2>/dev/null || true

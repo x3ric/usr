@@ -1,370 +1,1008 @@
-#!/bin/bash
-# Archx installer
+#!/usr/bin/env python3
+"""archx — Arch Linux Toolbox"""
 
-checkwget() {
-  which wget > /dev/null 2>&1
-  if [ "$?" -eq "0" ]; then
-    echo [✔]::[wget]: installation found!;
-  else
-    echo [✗]::[warning]:this script require wget ;
-    echo ""
-    echo [!]::[please wait]: Installing Wget ;
-    pacman -S wget --noconfirm
-    echo ""
-  fi
-  sleep 0.25
-}
+import argparse
+import getpass
+import os
+import shutil
+import signal
+import subprocess
+import sys
+import threading
+import time
+import urllib.request
+from pathlib import Path
 
-checkyay() {
-    which yay > /dev/null 2>&1
-    if [ "$?" -eq "0" ]; then
-    echo [✔]::[Yay]: installation found!;
-  else
-  echo [✗]::[warning]:this script require Yay ;
-  echo ""
-  echo [!]::[please wait]: Installing Yay ..  ;
-  git clone https://aur.archlinux.org/yay.git && cd yay && makepkg -si 
-  echo ""
-  fi
-  sleep 0.25
-}
+HOME = Path.home()
+BIN = HOME / ".local/share/bin"
+CACHE = HOME / ".cache/usr"
+ARCHX_CACHE = HOME / ".cache/archx"
+AUTOSTART = BIN / "autostart"
+SELF = BIN / "archx"
+USR_REPO = os.environ.get("ARCHX_USR_REPO", "https://github.com/X3ric/usr.git")
+PKG_OFFICIAL = os.environ.get("ARCHX_PKG_OFFICIAL", "https://raw.githubusercontent.com/X3ric/ArchX/refs/heads/main/pkg-files/hyprland.txt")
+PKG_AUR = os.environ.get("ARCHX_PKG_AUR", "https://raw.githubusercontent.com/X3ric/ArchX/refs/heads/main/pkg-files/aur-pkgs.txt")
+USR_REF = os.environ.get("ARCHX_USR_REF", "")
+USR_DIR = os.environ.get("ARCHX_USR_DIR", "")
+AUTO_YES = os.environ.get("ARCHX_YES", "").lower() in ("1", "yes", "true", "y")
+SKIP_PACKAGES = os.environ.get("ARCHX_SKIP_PACKAGES", "").lower() in ("1", "yes", "true", "y")
 
-checkgit() {
-    which git > /dev/null 2>&1
-    if [ "$?" -eq "0" ]; then
-    echo [✔]::[Git]: installation found!;
-  else
-  echo [✗]::[warning]:this script require Git ;
-  echo ""
-  echo [!]::[please wait]: Installing Git ..  ;
-  pacman -S git --noconfirm
-  echo ""
-  fi
-  sleep 0.25
-}
+ARCHX_ZSHENV_TEXT = 'export ZDOTDIR="$HOME/.local/zsh"\nexport PATH="$HOME/.local/share/bin:$HOME/.local/bin:$PATH"\n'
+ARCHX_COMPAT_ZSHRC = '# ArchX compatibility loader.\n# Some older installs/global zshenv files pointed ZDOTDIR at ~/.config/zsh.\n# Keep that path working, but always load the real config from ~/.local/zsh.\nexport ZDOTDIR="$HOME/.local/zsh"\nexport PATH="$HOME/.local/share/bin:$HOME/.local/bin:$PATH"\n[ -f "$HOME/.local/zsh/.zshrc" ] && source "$HOME/.local/zsh/.zshrc"\n'
+ARCHX_HOME_ZSHRC = '# ArchX zsh compatibility loader.\nexport ZDOTDIR="$HOME/.local/zsh"\nexport PATH="$HOME/.local/share/bin:$HOME/.local/bin:$PATH"\n[ -f "$ZDOTDIR/.zshrc" ] && source "$ZDOTDIR/.zshrc"\n'
+ARCHX_COMPAT_ZPROFILE = '# ArchX compatibility profile loader.\nexport ZDOTDIR="$HOME/.local/zsh"\n[ -f "$HOME/.local/zsh/.zprofile" ] && source "$HOME/.local/zsh/.zprofile"\n'
 
-checkfzf() {
-    which fzf > /dev/null 2>&1
-    if [ "$?" -eq "0" ]; then
-    echo [✔]::[Fzf]: installation found!;
-  else
-  echo [✗]::[warning]:this script require fzf ;
-  echo ""
-  echo [!]::[please wait]: Installing fzf ..  ;
-  pacman -S fzf --noconfirm
-  echo ""
-  fi
-  sleep 0.25
-}
+# Prefer usr-shipped tools first (papirus-folders, walset, gtkset, fzf-preview, etc.).
+os.environ["PATH"] = f"{BIN}:{os.environ.get('PATH', '')}"
 
-showlogo() {
-  clear
-  echo ""
-  echo "      █████╗ ██████╗  ██████╗██╗  ██╗██╗  ██╗"
-  echo "     ██╔══██╗██╔══██╗██╔════╝██║  ██║╚██╗██╔╝"
-  echo "     ███████║██████╔╝██║     ███████║ ╚███╔╝ "  
-  echo "     ██╔══██║██╔══██╗██║     ██╔══██║ ██╔██╗ " 
-  echo "     ██║  ██║██║  ██║╚██████╗██║  ██║██╔╝ ██╗" 
-  echo "     ╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝╚═╝  ╚═╝"  
-  echo -e "                \e[1;37m| ArchX toolbox |\e[0m\n"               
-}
+GREEN = "\033[32m"
+YELLOW = "\033[33m"
+RED = "\033[31m"
+RESET = "\033[0m"
 
-loading_animation() {
-    local pid=$1
-    local pkgname=$2
-    local delay=0
-    local spinstr='|/-\'
-    local counter=0
-    while [ "$(ps a | awk '{print $1}' | grep $pid)" ]; do
-        local temp=${spinstr#?}
-        printf "\r[%c] Checking %s" "$spinstr" "$pkgname"
-        local spinstr=$temp${spinstr%"$temp"}
-        sleep $delay
-        counter=$((counter + 1))
-        if [ $counter -eq 40 ]; then
-            printf "\r[%c] Checking %s...           " "$spinstr" "$pkgname"
-            counter=0
-        fi
-    done
-    printf "\r[✔] Checking %s... Done          \n" "$pkgname"
-}
 
-# Install Functions
+# ── Helpers ─────────────────────────────────────────────
 
-  function installsamba {
-    sudo systemctl enable smb.service
-    sudo systemctl enable nmb.service
-    echo "Cange password samba"
-    sudo smbpasswd -a $choice
-  }
-  function installremap {
-    yay -S --quiet --noconfirm --needed input-remapper-git
-    sudo systemctl restart input-remapper
-    sudo systemctl enable input-remapper
-    autostart="$HOME/.local/share/bin/autostart"
-    if ! cat "$autostart" | grep input-remapper-control ;then
-      echo -e "input-remapper-control --command autoload &\n" >> "$autostart"
-    fi
-  }
-  function installgtk3 {
-    git clone https://github.com/PCMan/gtk3-nocsd
-    cd gtk3-nocsd
-    make
-    sudo make install
-    cd ..
-    rm -rf gtk3-nocsd
-    sudo cp /usr/local/lib/libgtk3-nocsd.so.0 /usr/lib/libgtk3-nocsd.so.0
-  }
-  function installwine {
-    mkdir -p $HOME/.local/share/wineprefixes/default
-    command -V yay >/dev/null 2>&1 && yes "" | yay -Sy dxvk-bin
-    sudo pacman -S --needed --noconfirm wine winetricks wine-mono
-    echo "Change in Drives > Show dotfiles = true and in Desktop Integration > Theme = null, WinRt theme > Dark"
-    echo "and apply"
-    winecfg
-    echo "Windows Registry Editor Version 5.00
+def ok(msg):
+    print(f"  [{GREEN}✓{RESET}] {msg}")
 
-    [HKEY_CURRENT_USER\Control Panel\Colors]
-    \"ActiveBorder\"=\"1 1 1\"
-    \"ActiveTitle\"=\"255 255 255\"
-    \"AppWorkSpace\"=\"1 1 1\"
-    \"Background\"=\"1 1 1\"
-    \"ButtonAlternateFace\"=\"1 1 1\"
-    \"ButtonAlternativeFace\"=\"1 1 1\"
-    \"ButtonDkShadow\"=\"1 1 1\"
-    \"ButtonFace\"=\"1 1 1\"
-    \"ButtonHilight\"=\"255 255 255\"
-    \"ButtonLight\"=\"255 255 255\"
-    \"ButtonShadow\"=\"1 1 1\"
-    \"ButtonText\"=\"255 255 255\"
-    \"GradientActiveTitle\"=\"1 1 1\"
-    \"GradientInactiveTitle\"=\"1 1 1\"
-    \"GrayText\"=\"255 255 255\"
-    \"Hilight\"=\"255 255 255\"
-    \"HilightText\"=\"1 1 1\"
-    \"HotTrackingColor\"=\"255 255 255\"
-    \"InactiveBorder\"=\"1 1 1\"
-    \"InactiveTitle\"=\"255 255 255\"
-    \"InactiveTitleText\"=\"1 1 1\"
-    \"InfoText\"=\"255 255 255\"
-    \"InfoWindow\"=\"1 1 1\"
-    \"Menu\"=\"1 1 1\"
-    \"MenuBar\"=\"1 1 1\"
-    \"MenuHilight\"=\"255 255 255\"
-    \"MenuText\"=\"255 255 255\"
-    \"Scrollbar\"=\"1 1 1\"
-    \"TitleText\"=\"255 255 255\"
-    \"Window\"=\"1 1 1\"
-    \"WindowFrame\"=\"255 255 255\"
-    \"WindowText\"=\"255 255 255\"" > temp_wine_reg.reg
-    wine regedit temp_wine_reg.reg
-    rm temp_wine_reg.reg
-    gpu_type=$(lspci)
-    if grep -E "NVIDIA|GeForce" <<< ${gpu_type}; then
-        sudo pacman -S --needed --noconfirm nvidia-dkms nvidia-utils lib32-nvidia-utils nvidia-settings vulkan-icd-loader lib32-vulkan-icd-loader
-    elif lspci | grep 'VGA' | grep -E "Radeon|AMD"; then
-        sudo pacman -S --needed --noconfirm lib32-mesa vulkan-radeon lib32-vulkan-radeon vulkan-icd-loader lib32-vulkan-icd-loader
-    elif grep -E "Integrated Graphics Controller" <<< ${gpu_type}; then
-        sudo pacman -S --needed --noconfirm lib32-mesa vulkan-intel lib32-vulkan-intel vulkan-icd-loader lib32-vulkan-icd-loader
-    elif grep -E "Intel Corporation UHD" <<< ${gpu_type}; then
-        sudo pacman -S --needed --noconfirm lib32-mesa vulkan-intel lib32-vulkan-intel vulkan-icd-loader lib32-vulkan-icd-loader
-    fi
-    yay -S --quiet --noconfirm dxvk
-    wineboot
-  }
-  function installprinters {
-    sudo pacman -S --needed --noconfirm cups
-    sudo pacman -S --needed --noconfirm cups-pdf
-    sudo pacman -S --needed --noconfirm ghostscript
-    sudo pacman -S --needed --noconfirm gsfonts
-    sudo pacman -S --needed --noconfirm gutenprint
-    sudo pacman -S --needed --noconfirm gtk3-print-backends
-    sudo pacman -S --needed --noconfirm libcups
-    sudo pacman -S --needed --noconfirm system-config-printer
-    sudo systemctl enable cups.service
-    sudo systemctl start cups.service
-  }
-  # XForks
-    function installpicom {
-      curl -s https://raw.githubusercontent.com/X3ric/picom/next/install | bash
-      if pgrep awesome > /dev/null; then
-          awesome-client "awesome.restart()" > /dev/null 2>&1
-      fi
+def warn(msg):
+    print(f"  [{YELLOW}!{RESET}] {msg}")
+
+def fail(msg):
+    print(f"  [{RED}✗{RESET}] {msg}")
+
+def has(name):
+    return shutil.which(name) is not None
+
+
+def _cmd(args, sudo=False):
+    cmd = list(args)
+    if sudo and os.geteuid() != 0:
+        cmd.insert(0, "sudo")
+    return cmd
+
+
+def run(*args, sudo=False, **kw):
+    return subprocess.run(_cmd(args, sudo=sudo), check=True, **kw)
+
+
+def run_allowfail(*args, sudo=False, **kw):
+    return subprocess.run(_cmd(args, sudo=sudo), **kw)
+
+
+class Spinner:
+    def __init__(self, msg):
+        self.msg = msg
+        self._run = False
+        self._th = None
+
+    def start(self):
+        self._run = True
+        self._th = threading.Thread(target=self._spin, daemon=True)
+        self._th.start()
+
+    def _spin(self):
+        chars = "|/-\\"
+        i = 0
+        while self._run:
+            sys.stdout.write(f"\r  [{chars[i % 4]}] {self.msg}")
+            sys.stdout.flush()
+            time.sleep(0.12)
+            i += 1
+
+    def stop(self, success=True):
+        self._run = False
+        if self._th:
+            self._th.join()
+        mark = f"{GREEN}✓{RESET}" if success else f"{RED}✗{RESET}"
+        sys.stdout.write(f"\r  [{mark}] {self.msg}\n")
+        sys.stdout.flush()
+
+
+# ── Logo ────────────────────────────────────────────────
+
+LOGO = r"""
+      █████╗ ██████╗  ██████╗██╗  ██╗██╗  ██╗
+     ██╔══██╗██╔══██╗██╔════╝██║  ██║╚██╗██╔╝
+     ███████║██████╔╝██║     ███████║ ╚███╔╝
+     ██╔══██║██╔══██╗██║     ██╔══██║ ██╔██╗
+     ██║  ██║██║  ██║╚██████╗██║  ██║██╔╝ ██╗
+     ╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝╚═╝  ╚═╝
+                | ArchX toolbox |
+"""
+
+def clear():
+    print("\033[2J\033[H", end="")
+
+def logo():
+    clear()
+    print(LOGO)
+
+
+# ── Dep checks ──────────────────────────────────────────
+
+def _install_yay():
+    warn("yay: installing from AUR …")
+    tmp = Path("/tmp/yay-build")
+    shutil.rmtree(tmp, ignore_errors=True)
+    tmp.mkdir(parents=True, exist_ok=True)
+    run("git", "clone", "https://aur.archlinux.org/yay.git", str(tmp))
+    run("makepkg", "-si", "--noconfirm", cwd=str(tmp))
+    shutil.rmtree(tmp, ignore_errors=True)
+    ok("yay: installed")
+
+
+def ensure_deps():
+    if SKIP_PACKAGES:
+        for cmd in ("git", "python3", "fzf"):
+            if has(cmd):
+                ok(f"{cmd}: found")
+            else:
+                warn(f"{cmd}: missing; package install skipped by ARCHX_SKIP_PACKAGES=1")
+        return
+
+    for cmd, pkg in [("wget", "wget"), ("git", "git"), ("fzf", "fzf"), ("python3", "python")]:
+        if has(cmd):
+            ok(f"{cmd}: found")
+        else:
+            warn(f"{cmd}: installing …")
+            run("pacman", "-S", "--needed", "--noconfirm", pkg, sudo=True)
+            ok(f"{cmd}: installed")
+
+    if not has("yay"):
+        _install_yay()
+
+
+# ── Installers ──────────────────────────────────────────
+
+def install_samba():
+    run("systemctl", "enable", "smb.service", sudo=True)
+    run("systemctl", "enable", "nmb.service", sudo=True)
+    warn("Setting samba password for current user")
+    user = os.environ.get("USER") or run_allowfail("whoami", capture_output=True, text=True).stdout.strip() or "root"
+    run("smbpasswd", "-a", user, sudo=True)
+
+
+def install_remap():
+    run("yay", "-S", "--quiet", "--noconfirm", "--needed", "input-remapper-git")
+    run("systemctl", "restart", "input-remapper", sudo=True)
+    run("systemctl", "enable", "input-remapper", sudo=True)
+    line = "input-remapper-control --command autoload &\n"
+    if AUTOSTART.exists():
+        if line.strip() not in AUTOSTART.read_text():
+            AUTOSTART.write_text(AUTOSTART.read_text() + line)
+    else:
+        AUTOSTART.parent.mkdir(parents=True, exist_ok=True)
+        AUTOSTART.write_text(line)
+
+
+def install_wine():
+    if not has("yay"):
+        _install_yay()
+    run("yay", "-S", "--noconfirm", "--needed", "dxvk-bin")
+    run("pacman", "-S", "--needed", "--noconfirm",
+        "wine", "winetricks", "wine-mono", sudo=True)
+    print(f"\n  {YELLOW}→ In Drives → Show dotfiles = true")
+    print("  → Desktop Integration → Theme = null")
+    print(f"  → WinRt theme → Dark{RESET}\n")
+    run("winecfg")
+
+    reg = "Windows Registry Editor Version 5.00\n\n"
+    reg += "[HKEY_CURRENT_USER\\Control Panel\\Colors]\n"
+    colors = {
+        "ActiveBorder": "1 1 1", "ActiveTitle": "255 255 255",
+        "AppWorkSpace": "1 1 1", "Background": "1 1 1",
+        "ButtonAlternateFace": "1 1 1", "ButtonDkShadow": "1 1 1",
+        "ButtonFace": "1 1 1", "ButtonHilight": "255 255 255",
+        "ButtonLight": "255 255 255", "ButtonShadow": "1 1 1",
+        "ButtonText": "255 255 255", "GrayText": "255 255 255",
+        "Hilight": "255 255 255", "HilightText": "1 1 1",
+        "HotTrackingColor": "255 255 255", "InactiveBorder": "1 1 1",
+        "InactiveTitle": "255 255 255", "InactiveTitleText": "1 1 1",
+        "InfoText": "255 255 255", "InfoWindow": "1 1 1",
+        "Menu": "1 1 1", "MenuBar": "1 1 1",
+        "MenuHilight": "255 255 255", "MenuText": "255 255 255",
+        "Scrollbar": "1 1 1", "TitleText": "255 255 255",
+        "Window": "1 1 1", "WindowFrame": "255 255 255",
+        "WindowText": "255 255 255",
     }
-    function installctpv {
-      curl -s https://raw.githubusercontent.com/X3ric/ctpv/master/install | bash
-    }
-# ArchX
-  function updates() {
-    git --git-dir=$HOME/.cache/usr/.git fetch --quiet > /dev/null 2>&1
-    if [ $(git --git-dir=$HOME/.cache/usr/.git rev-list HEAD...origin/main --count) -gt 0 ]; then
-      update_message=$(git --git-dir=$HOME/.cache/usr/.git log --pretty=format:%B -1 origin/main)
-      echo "There is an update: $update_message"
-      echo "Update with archx > Update"
-    fi
-  }
-  function updates-notify() {
-      git --git-dir=$HOME/.cache/usr/.git fetch --quiet > /dev/null 2>&1
-      if [ $(git --git-dir=$HOME/.cache/usr/.git rev-list HEAD...origin/main --count) -gt 0 ]; then
-        update_message=$(git --git-dir=$HOME/.cache/usr/.git log --pretty=format:%B -1 origin/main)
-        echo "There is an update:"
-        echo "$update_message"
-        echo "Update with archx > update"
-        notify-send "Git Update Available" "Update with archx > update \n $update_message"
-      fi
-  }
-  function updateconfig { # ArchX/usr 
-      showlogo
-      [[ ! -d "$HOME/.cache/archx" ]] && mkdir -p "$HOME/.cache/archx"
-      difffile="$HOME/.cache/archx/diffold-$(date +"%Y%m%d_%H%M%S")"
-      echo -e "Warning \nThis will replace your dotfiles with my X3ric/usr \nbut save diffs in $difffile"
-      read -p 'Update dotfiles? y[n]: ' dt
-      if [[ $dt == "y" ]]; then
-        sudo clear
-        echo "[✔]::[Deps]: checking!"
-        echo "[✔]::[Deps]: checking awesome!"
-        while IFS= read -r package; do
-            if [[ ${package:0:1} == '#' ]]; then
-                continue
-            fi
-            sudo pacman -S --noconfirm --needed "$package" 2>&1 | grep -E -v 'up to date|nothing to do' &
-            loading_animation $! "$package"
-        done < <(curl -s https://raw.githubusercontent.com/X3ric/ArchX/master/pkg-files/awesome.txt | sed '/--END OF MINIMAL INSTALL--/d')
-        echo "[✔]::[Deps]: checking aur-pkgs!"
-        while IFS= read -r package; do
-            if [[ ${package:0:1} == '#' ]]; then
-                continue
-            fi
-            yay -S --quiet --noconfirm --needed "$package" 2>&1 | grep -E -v 'up to date|nothing to do' &
-            loading_animation $! "$package"
-        done < <(curl -s https://raw.githubusercontent.com/X3ric/ArchX/master/pkg-files/aur-pkgs.txt | sed '/--END OF MINIMAL INSTALL--/d')
-        echo "[✔]::[Deps]: all packages checked and installed successfully!"
-        if [ -f "$HOME/.local/share/bin/archx" ]; then
-          if ! pacman -Qs picom-x > /dev/null; then
-              echo -e "To install my picom do -> archx > install > apps > picom"
-          fi
-        fi
-        if ! pacman -Qs ctpv-x > /dev/null; then
-            installctpv
-        fi
-        [[ ! -f "/usr/lib/libgtk3-nocsd.so.0" ]] && installgtk3
-        desktop-hide
-        echo "[✔]::[X3ric/usr]: config installation"
-        usr=$(whoami)
-        if [ -d $HOME/.cache/usr ]; then
-          echo "Saving your personal changes to $difffile"
-          find "$HOME/.cache/usr" -type f \
-            \( ! -name 'README.md' -a ! -name 'LICENSE' \) \
-            -not \( -path "$HOME/.cache/usr/.git*" -o -path "$HOME/.cache/usr/.mozilla*" -o -path "$HOME/.cache/usr/.cache*" \) \
-            -print0 | xargs -0 -P "$(nproc)" -I {} bash -c \
-            'basefile="${0/$HOME\/.cache\/usr\//}"; \
-            if [ -f "./$basefile" ]; then \
-              diff -uN "$0" "./$basefile"; \
-            else \
-              echo "File not found in current directory: $basefile"; \
-            fi' {} > "$difffile"
-          cd $HOME/.cache/usr
-          git stash
-          git pull --rebase
-          cd $HOME
-        else
-          cd $HOME/.cache
-          git clone https://github.com/X3ric/usr.git
-          cd $HOME
-        fi
-        find ./.cache/usr -type f \( ! -name 'README.md' -a ! -name 'LICENSE' \) \
-        -not \( -path './.cache/usr/.git*' -o -path './.cache/usr/.mozilla*' -o -path './.cache/usr/.cache*' \) \
-        -print0 | xargs -0 -P "$(nproc)" -I {} bash -c 'basefile="${0#*/.cache/usr/}"; diff -uN "./$basefile" "$0"' {} \; | delta --dark
-        git --git-dir=$HOME/.cache/usr/.git log -1 --pretty=format:%B
-        sudo rm -Rf $HOME/.cache/usr/.mozilla
-        sudo chown -Rf $usr:$usr $HOME/.cache/usr/
-        sudo chmod -Rf +x $HOME/.cache/usr/
-        sudo chmod 755 $HOME/.cache/usr/
-        sudo cp -r -a $HOME/.cache/usr/. $HOME/
-        sudo rm -Rf $HOME/.git/
-        sudo rm -Rf $HOME/README.md
-        sudo rm -Rf $HOME/LICENSE
-        echo "export ZDOTDIR=~/.local/zsh" | sudo tee /etc/zsh/zshenv
-        rm -rf ~/.zshenv
-        papirus-folders -C blue > /dev/null 2>&1
-        pgrep -x "awesome" >/dev/null && awesome-client "awesome.restart()" > /dev/null 2>&1
-        [ -f "$HOME/archx" ] && sudo rm -Rf $HOME/archx
-      fi
-    }
+    for k, v in colors.items():
+        reg += f'"{k}"="{v}"\n'
 
-# Menu
+    regfile = Path("/tmp/wine_theme.reg")
+    regfile.write_text(reg)
+    run("wine", "regedit", str(regfile))
+    regfile.unlink(missing_ok=True)
 
-if [[ $1 == "updates" ]]; then
-  updates-notify
-  exit
+    gpu = run_allowfail("lspci", capture_output=True, text=True).stdout
+    gpu_pkgs = []
+    if "NVIDIA" in gpu or "GeForce" in gpu:
+        gpu_pkgs = ["nvidia-dkms", "nvidia-utils", "lib32-nvidia-utils", "nvidia-settings", "vulkan-icd-loader", "lib32-vulkan-icd-loader"]
+    elif "Radeon" in gpu or "AMD" in gpu:
+        gpu_pkgs = ["lib32-mesa", "vulkan-radeon", "lib32-vulkan-radeon", "vulkan-icd-loader", "lib32-vulkan-icd-loader"]
+    elif "Intel" in gpu and ("UHD" in gpu or "Integrated" in gpu):
+        gpu_pkgs = ["lib32-mesa", "vulkan-intel", "lib32-vulkan-intel", "vulkan-icd-loader", "lib32-vulkan-icd-loader"]
+    if gpu_pkgs:
+        run("pacman", "-S", "--needed", "--noconfirm", *gpu_pkgs, sudo=True)
+
+    run("wineboot")
+
+
+def install_printers():
+    run("pacman", "-S", "--needed", "--noconfirm",
+        "cups", "cups-pdf", "ghostscript", "gsfonts", "gutenprint",
+        "gtk3-print-backends", "libcups", "system-config-printer", sudo=True)
+    run("systemctl", "enable", "cups.service", sudo=True)
+    run("systemctl", "start", "cups.service", sudo=True)
+
+
+def install_ctpv():
+    run("bash", "-c", "curl -s https://raw.githubusercontent.com/X3ric/ctpv/master/install | bash")
+
+
+# ── Git helpers ─────────────────────────────────────────
+
+def _git_dir():
+    return f"--git-dir={CACHE / '.git'}"
+
+def _git_fetch():
+    if not (CACHE / ".git").exists():
+        return False
+    run_allowfail("git", _git_dir(), "fetch", "--quiet")
+    return True
+
+def _git_behind_count():
+    r = run_allowfail("git", _git_dir(), "rev-list", "HEAD...origin/main", "--count",
+                      capture_output=True, text=True)
+    return int(r.stdout.strip() or "0")
+
+def _git_last_log():
+    r = run_allowfail("git", _git_dir(), "log", "--pretty=format:%B", "-1", "origin/main",
+                      capture_output=True, text=True)
+    return r.stdout.strip()
+
+
+# ── Updates ─────────────────────────────────────────────
+
+def check_updates():
+    if not _git_fetch():
+        return False
+    count = _git_behind_count()
+    if count > 0:
+        warn(f"Dotfiles update: {_git_last_log()}")
+        return True
+    return False
+
+
+def check_updates_notify():
+    if not _git_fetch():
+        return
+    if _git_behind_count() > 0:
+        msg = _git_last_log()
+        print(f"Update: {msg}")
+        run_allowfail("notify-send", "Dotfiles Update", f"archx > update\n{msg}")
+
+
+def _fetch_pkg_list(url, stop_marker=None):
+    with urllib.request.urlopen(url) as r:
+        lines = r.read().decode().splitlines()
+    pkgs = []
+    for line in lines:
+        line = line.split("#", 1)[0].strip()
+        if not line:
+            continue
+        if stop_marker and stop_marker in line:
+            break
+        pkgs.append(line)
+    return pkgs
+
+
+def _install_pkg_list(url, stop_marker, runner, label):
+    spinner = Spinner(label)
+    spinner.start()
+    try:
+        for pkg in _fetch_pkg_list(url, stop_marker):
+            runner(pkg)
+        spinner.stop(True)
+    except Exception:
+        spinner.stop(False)
+        raise
+
+
+def _clone_usr_repo():
+    # Explicit ARCHX_USR_REF is tried first. If it fails, fall back to the repo
+    # default branch, then main, then master.
+    shutil.rmtree(CACHE, ignore_errors=True)
+    attempts = []
+    if USR_REF:
+        attempts.append(["git", "clone", "--depth", "1", "--branch", USR_REF, USR_REPO, str(CACHE)])
+    attempts.append(["git", "clone", "--depth", "1", USR_REPO, str(CACHE)])
+    attempts.append(["git", "clone", "--depth", "1", "--branch", "main", USR_REPO, str(CACHE)])
+    attempts.append(["git", "clone", "--depth", "1", "--branch", "master", USR_REPO, str(CACHE)])
+
+    last = None
+    for cmd in attempts:
+        shutil.rmtree(CACHE, ignore_errors=True)
+        r = run_allowfail(*cmd, capture_output=True, text=True)
+        if r.returncode == 0:
+            ok("usr repo cloned")
+            return
+        last = (r.stderr or r.stdout or "clone failed").strip()
+        warn(f"clone attempt failed: {' '.join(cmd[1:5])}")
+    raise RuntimeError(last or "failed to clone usr repo")
+
+
+def _sync_usr_tree():
+    copied = 0
+    for f in sorted(CACHE.rglob("*")):
+        if f.is_dir() or _skip(f):
+            continue
+        rel = f.relative_to(CACHE)
+        target = HOME / rel
+        target.parent.mkdir(parents=True, exist_ok=True)
+        run("cp", "-rpa", str(f), str(target))
+        copied += 1
+    ok(f"synced {copied} usr files")
+
+
+def _write_file(path, text, mode=None):
+    path = Path(path).expanduser()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(text)
+    if mode is not None:
+        path.chmod(mode)
+
+
+def setup_shell_and_tty1_autostart():
+    start_script = BIN / "start-hyprland"
+    _write_file(start_script, '''#!/usr/bin/env bash
+set -euo pipefail
+
+export XDG_SESSION_TYPE=wayland
+export XDG_CURRENT_DESKTOP=Hyprland
+export XDG_SESSION_DESKTOP=Hyprland
+export GDK_BACKEND=wayland,x11
+export QT_QPA_PLATFORM='wayland;xcb'
+export MOZ_ENABLE_WAYLAND=1
+export XCURSOR_THEME="${XCURSOR_THEME:-cz-Hickson-Black}"
+export XCURSOR_SIZE="${XCURSOR_SIZE:-24}"
+export HYPRCURSOR_THEME="${HYPRCURSOR_THEME:-cz-Hickson-Black}"
+export HYPRCURSOR_SIZE="${HYPRCURSOR_SIZE:-24}"
+
+if command -v uwsm >/dev/null 2>&1 && uwsm check may-start >/dev/null 2>&1; then
+    exec systemd-cat -t uwsm_start uwsm start hyprland.desktop
 fi
-pacman -Sy && clear && checkwget && checkyay && checkgit && checkfzf
-menu_state=1
-exit_flag=false
-while true; do
-  if [[ $menu_state -eq 0 ]]; then
-    exit
-  elif [[ $menu_state -eq 1 ]]; then
-    showlogo
-    echo -e "                  \E[32m[ ARCHXMENU ]\033[0m"
-    updates
-    if [ -f "$HOME/.local/share/bin/archx" ]; then
-      options=("Install" "Update" "Quit")
-      selected_option=$(printf '%s\n' "${options[@]}" | fzf-tmux --prompt="Find = " -x --color=bg+:234 --height ${FZF_TMUX_HEIGHT:-40%} -m --reverse --ansi)
-      case $selected_option in
-        "Install") menu_state=2 ;;
-        "Update") clear && updateconfig || exit_flag=true ;;
-        "Quit") clear && exit ;;
-        *) echo "Invalid option = $selected_option" && sleep 1 ;;
-      esac
-    else
-      options=("Configs" "Quit")
-      selected_option=$(printf '%s\n' "${options[@]}" | fzf-tmux --prompt="Find = " -x --color=bg+:234 --height ${FZF_TMUX_HEIGHT:-40%} -m --reverse --ansi)
-      case $selected_option in
-        "Configs") clear && updateconfig || exit_flag=true ;;
-        "Quit") clear && exit ;;
-        *) echo "Invalid option = $selected_option" && sleep 1 ;;
-      esac
-    fi
-  elif [[ $menu_state -eq 2 ]]; then
-    showlogo
-    echo -e "                  \033[1m[INSTALLERS]\033[0m"
-    options=("Services" "Apps" "Back")
-    selected_option=$(printf '%s\n' "${options[@]}" | fzf-tmux --prompt=" Find = " -x --color=bg+:234 --height ${FZF_TMUX_HEIGHT:-40%} -m --reverse --ansi)
-    case $selected_option in
-      "Services") menu_state=3 ;;
-      "Apps") menu_state=4 ;;
-      "Back") menu_state=1 ;;
-      *) echo "Invalid option = $selected_option" && sleep 1 ;;
-    esac
-  elif [[ $menu_state -eq 3 ]]; then
-    showlogo
-    echo -e "                  \033[1m[INSTALLERS]\033[0m"
-    echo -e "                   \033[1m[SERVICES]\033[0m"
-    options=("Printers" "Samba" "Back")
-    selected_option=$(printf '%s\n' "${options[@]}" | fzf-tmux --prompt=" Find = " -x --color=bg+:234 --height ${FZF_TMUX_HEIGHT:-40%} -m --reverse --ansi)
-    case $selected_option in
-      "Printers") clear && installprinters || exit_flag=true ;;
-      "Samba") clear && installsamba || exit_flag=true ;;
-      "Back") menu_state=2 ;;
-      *) echo "Invalid option = $selected_option" && sleep 1 ;;
-    esac
-  elif [[ $menu_state -eq 4 ]]; then
-    showlogo
-    echo -e "                  \033[1m[INSTALLERS]\033[0m"
-    options=("Upgrade" "Picom" "Remap" "Wine" "Ctpv" "Back")
-    selected_option=$(printf '%s\n' "${options[@]}" | fzf-tmux --prompt=" Find = " -x --color=bg+:234 --height ${FZF_TMUX_HEIGHT:-40%} -m --reverse --ansi)
-    case $selected_option in
-      "Upgrade") clear && yay -Syu --noconfirm || exit_flag=true ;;
-      "Picom") clear && installpicom || exit_flag=true ;;
-      "Remap") clear && installremap || exit_flag=true ;;
-      "Wine") clear && installwine || exit_flag=true ;;
-      "Ctpv") clear && installctpv || exit_flag=true ;;
-      "Back") menu_state=2 ;;
-      *) echo "Invalid option = $selected_option" && sleep 1 ;;
-    esac
-  fi
-  if $exit_flag; then
-    exit
-  fi
-done
+
+if command -v dbus-run-session >/dev/null 2>&1; then
+    exec dbus-run-session Hyprland
+fi
+exec Hyprland
+''', 0o755)
+    _write_file(BIN / "archx-start-hyprland", '#!/usr/bin/env bash\nexec start-hyprland "$@"\n', 0o755)
+
+    autostart = '''# ArchX tty1 Hyprland autostart. Safe for bash/zsh login shells.
+archx_start_hyprland_tty1() {
+    [ -z "${SSH_TTY:-}" ] || return 0
+    [ -z "${DISPLAY:-}" ] || return 0
+    [ -z "${WAYLAND_DISPLAY:-}" ] || return 0
+    [ "$(tty 2>/dev/null)" = "/dev/tty1" ] || return 0
+    command -v start-hyprland >/dev/null 2>&1 || return 0
+    exec start-hyprland
+}
+archx_start_hyprland_tty1
+'''
+    profile = '''# ArchX user environment
+export PATH="$HOME/.local/share/bin:$HOME/.local/bin:$PATH"
+export XDG_CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
+export XDG_DATA_HOME="${XDG_DATA_HOME:-$HOME/.local/share}"
+export XDG_CACHE_HOME="${XDG_CACHE_HOME:-$HOME/.cache}"
+export GTK_THEME="${GTK_THEME:-darkarch}"
+export XCURSOR_THEME="${XCURSOR_THEME:-cz-Hickson-Black}"
+export XCURSOR_SIZE="${XCURSOR_SIZE:-24}"
+export HYPRCURSOR_THEME="${HYPRCURSOR_THEME:-cz-Hickson-Black}"
+export HYPRCURSOR_SIZE="${HYPRCURSOR_SIZE:-24}"
+export MOZ_ENABLE_WAYLAND=1
+'''
+    _write_file(HOME / ".profile", profile + "\n" + autostart)
+    _write_file(HOME / ".bash_profile", '[ -f "$HOME/.profile" ] && . "$HOME/.profile"\n')
+    _write_file(HOME / ".zshenv", ARCHX_ZSHENV_TEXT)
+    _write_file(HOME / ".zshrc", ARCHX_HOME_ZSHRC)
+    _write_file(HOME / ".local/zsh/.zprofile", '[ -f "$HOME/.profile" ] && source "$HOME/.profile"\n')
+    _write_file(HOME / ".config/zsh/.zshenv", ARCHX_ZSHENV_TEXT)
+    _write_file(HOME / ".config/zsh/.zshrc", ARCHX_COMPAT_ZSHRC)
+    _write_file(HOME / ".config/zsh/.zprofile", ARCHX_COMPAT_ZPROFILE)
+
+    # Keep zsh loading the real ArchX config from every login path.
+    # This intentionally uses tee instead of a temp copy so sudo/non-root firstboot behaves reliably.
+    run_allowfail("mkdir", "-p", "/etc/zsh", sudo=True)
+    r = run_allowfail("tee", "/etc/zsh/zshenv", sudo=True, input=ARCHX_ZSHENV_TEXT, text=True,
+                      stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    if r.returncode == 0:
+        ok("global zshenv points to ~/.local/zsh")
+    else:
+        warn("could not write /etc/zsh/zshenv; user zshenv fallback is installed")
+    ok("shell profiles and tty1 Hyprland autostart configured")
+
+
+
+def apply_default_wallpaper_and_terminal():
+    wal_cache = HOME / ".cache/wal"
+    wal_cache.mkdir(parents=True, exist_ok=True)
+    default_wall = HOME / "Pictures/Wallpapers/Nature/Nature.png"
+    if not default_wall.exists():
+        candidates = list((HOME / "Pictures/Wallpapers").glob("**/*"))
+        candidates = [p for p in candidates if p.suffix.lower() in (".jpg", ".jpeg", ".png", ".webp")]
+        default_wall = candidates[0] if candidates else default_wall
+    if default_wall.exists():
+        (wal_cache / "wal").write_text(str(default_wall) + "\n")
+    else:
+        (wal_cache / "wal").write_text("$HOME/Pictures/Wallpapers/Nature/Nature.png\n")
+
+    colors = ['#0b0b0b', '#48534A', '#516D55', '#5B5B69', '#658B5F', '#564F96', '#645B97', '#c0acd1', '#867892', '#48534A', '#516D55', '#5B5B69', '#658B5F', '#564F96', '#645B97', '#c0acd1']
+    (wal_cache / "colors").write_text("\n".join(colors) + "\n")
+    kitty_text = 'foreground         #c0acd1\nbackground         #0b0b0b\nbackground_opacity 0.92\ncursor             #c0acd1\n\nactive_tab_foreground     #0b0b0b\nactive_tab_background     #c0acd1\ninactive_tab_foreground   #c0acd1\ninactive_tab_background   #0b0b0b\n\nactive_border_color   #c0acd1\ninactive_border_color #0b0b0b\nbell_border_color     #48534A\n\ncolor0       #0b0b0b\ncolor8       #867892\ncolor1       #48534A\ncolor9       #48534A\ncolor2       #516D55\ncolor10      #516D55\ncolor3       #5B5B69\ncolor11      #5B5B69\ncolor4       #658B5F\ncolor12      #658B5F\ncolor5       #564F96\ncolor13      #564F96\ncolor6       #645B97\ncolor14      #645B97\ncolor7       #c0acd1\ncolor15      #c0acd1\n'
+    waybar_text = '@define-color foreground #c0acd1;\n@define-color background #0b0b0b;\n@define-color cursor #c0acd1;\n\n@define-color color0 #0b0b0b;\n@define-color color1 #48534A;\n@define-color color2 #516D55;\n@define-color color3 #5B5B69;\n@define-color color4 #658B5F;\n@define-color color5 #564F96;\n@define-color color6 #645B97;\n@define-color color7 #c0acd1;\n@define-color color8 #867892;\n@define-color color9 #48534A;\n@define-color color10 #516D55;\n@define-color color11 #5B5B69;\n@define-color color12 #658B5F;\n@define-color color13 #564F96;\n@define-color color14 #645B97;\n@define-color color15 #c0acd1;\n'
+    css_text = ':root {\n    --color0: #0b0b0b;\n    --color1: #48534A;\n    --color2: #516D55;\n    --color3: #5B5B69;\n    --color4: #658B5F;\n    --color5: #564F96;\n    --color6: #645B97;\n    --color7: #c0acd1;\n    --color8: #867892;\n    --color9: #48534A;\n    --color10: #516D55;\n    --color11: #5B5B69;\n    --color12: #658B5F;\n    --color13: #564F96;\n    --color14: #645B97;\n    --color15: #c0acd1;\n    --foreground: #c0acd1;\n    --background: #0b0b0b;\n}\n'
+    (wal_cache / "colors-kitty.conf").write_text(kitty_text)
+    (wal_cache / "colors-waybar.css").write_text(waybar_text)
+    (wal_cache / "colors.css").write_text(css_text)
+    fzf_text = r"""# Generated by walset/archx. Safe for zsh/bash source.
+if [ -z "${ARCHX_FZF_COLORS_LOADED:-}" ]; then
+  export ARCHX_FZF_COLORS_LOADED=1
+  export FZF_DEFAULT_OPTS="--height=40% --layout=reverse --border=rounded --prompt=❯  --pointer=❯ --marker=+ --color=fg:#c0acd1,bg:#0b0b0b,fg+:#c0acd1,bg+:#48534A,hl:#658B5F,hl+:#658B5F,info:#645B97,prompt:#516D55,pointer:#c0acd1,marker:#564F96,spinner:#658B5F,header:#5B5B69,border:#867892,gutter:#0b0b0b ${FZF_DEFAULT_OPTS:-}"
+  export FZF_CTRL_R_OPTS="--preview 'echo {}' --preview-window=down:3:hidden:wrap --bind 'ctrl-/:toggle-preview' ${FZF_CTRL_R_OPTS:-}"
+  export FZF_CTRL_T_OPTS="--preview 'fzf-preview {} 2>/dev/null || file -- {}' --preview-window=right:60%:wrap ${FZF_CTRL_T_OPTS:-}"
+  export FZF_ALT_C_OPTS="--preview 'ls -la --color=always {} 2>/dev/null | head -80' --preview-window=right:60%:wrap ${FZF_ALT_C_OPTS:-}"
+fi
+"""
+    (wal_cache / "colors-fzf.zsh").write_text(fzf_text)
+
+    kitty_dir = HOME / ".config/kitty"
+    kitty_dir.mkdir(parents=True, exist_ok=True)
+    (kitty_dir / "colors.conf").write_text(kitty_text)
+
+    # Keep the default Nature palette deterministic; walset can be run manually to pick another wallpaper.
+    wlogout = HOME / ".config/wlogout"
+    wlogout.mkdir(parents=True, exist_ok=True)
+    _write_file(wlogout / "style.css", """* { background-image: none; box-shadow: none; font-family: FiraCode Nerd Font, Fira Code, monospace; font-size: 16px; }
+window { background-color: rgba(11, 11, 11, 0.74); }
+button { color: #c0acd1; background-color: rgba(72, 83, 74, 0.50); border: 2px solid rgba(192, 172, 209, 0.22); border-radius: 18px; background-repeat: no-repeat; background-position: center; background-size: 30%; margin: 14px; min-width: 140px; min-height: 120px; transition: 120ms ease-in-out; }
+button:hover, button:focus { color: #0b0b0b; background-color: #c0acd1; border-color: #658B5F; }
+#lock { background-color: rgba(81, 109, 85, 0.55); }
+#logout { background-color: rgba(91, 91, 105, 0.55); }
+#suspend { background-color: rgba(101, 139, 95, 0.55); }
+#hibernate { background-color: rgba(86, 79, 150, 0.55); }
+#shutdown { background-color: rgba(100, 91, 151, 0.55); }
+#reboot { background-color: rgba(134, 120, 146, 0.55); }
+""")
+    if has("gtkset"):
+        run_allowfail("gtkset", stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    ok("default Nature wallpaper, terminal colors, and wlogout theme prepared")
+def apply_gtk_theme():
+    for d in (HOME / ".config/gtk-2.0", HOME / ".config/gtk-3.0", HOME / ".config/gtk-4.0"):
+        d.mkdir(parents=True, exist_ok=True)
+        _write_file(d / "settings.ini", '''[Settings]
+gtk-theme-name=darkarch
+gtk-icon-theme-name=Papirus
+gtk-font-name=Hack 10
+gtk-cursor-theme-name=cz-Hickson-Black
+gtk-cursor-theme-size=24
+gtk-toolbar-style=GTK_TOOLBAR_BOTH
+gtk-toolbar-icon-size=GTK_ICON_SIZE_SMALL_TOOLBAR
+gtk-button-images=1
+gtk-menu-images=1
+gtk-enable-event-sounds=1
+gtk-enable-input-feedback-sounds=0
+gtk-xft-antialias=1
+gtk-xft-hinting=1
+gtk-xft-hintstyle=hintslight
+gtk-xft-rgba=rgb
+gtk-application-prefer-dark-theme=1
+''')
+
+    _write_file(HOME / ".gtkrc-2.0", '''gtk-theme-name="darkarch"
+gtk-icon-theme-name="Papirus"
+gtk-font-name="Hack 10"
+gtk-cursor-theme-name="cz-Hickson-Black"
+gtk-cursor-theme-size=24
+gtk-toolbar-style=GTK_TOOLBAR_BOTH
+gtk-toolbar-icon-size=GTK_ICON_SIZE_SMALL_TOOLBAR
+gtk-button-images=1
+gtk-menu-images=1
+gtk-enable-event-sounds=1
+gtk-enable-input-feedback-sounds=0
+gtk-xft-antialias=1
+gtk-xft-hinting=1
+gtk-xft-hintstyle="hintslight"
+gtk-xft-rgba="rgb"
+''')
+
+    _write_file(HOME / ".config/xsettingsd/xsettingsd.conf", '''Net/ThemeName "darkarch"
+Net/IconThemeName "Papirus"
+Gtk/CursorThemeName "cz-Hickson-Black"
+Gtk/CursorThemeSize 24
+Net/EnableEventSounds 1
+EnableInputFeedbackSounds 0
+Xft/Antialias 1
+Xft/Hinting 1
+Xft/HintStyle "hintslight"
+Xft/RGBA "rgb"
+''')
+
+    _write_file(HOME / ".config/environment.d/90-archx-theme.conf", '''PATH=%h/.local/share/bin:%h/.local/bin:${PATH}
+GTK_THEME=darkarch
+XCURSOR_THEME=cz-Hickson-Black
+XCURSOR_SIZE=24
+HYPRCURSOR_THEME=cz-Hickson-Black
+HYPRCURSOR_SIZE=24
+MOZ_ENABLE_WAYLAND=1
+''')
+
+    for cmd in [
+        ("gsettings", "set", "org.gnome.desktop.interface", "gtk-theme", "darkarch"),
+        ("gsettings", "set", "org.gnome.desktop.interface", "icon-theme", "Papirus"),
+        ("gsettings", "set", "org.gnome.desktop.interface", "cursor-theme", "cz-Hickson-Black"),
+        ("gsettings", "set", "org.gnome.desktop.interface", "color-scheme", "prefer-dark"),
+    ]:
+        run_allowfail(*cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+    run_allowfail("gtk-update-icon-cache", "-f", "-t", str(HOME / ".icons/Papirus"), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    if has("papirus-folders"):
+        run_allowfail("papirus-folders", "-C", "green", stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    if has("papirus-folders-autocolor"):
+        run_allowfail("papirus-folders-autocolor", stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    if has("gtkset"):
+        run_allowfail("gtkset", stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    ok("GTK theme/icon settings applied")
+
+
+
+def ensure_zsh_login_shell():
+    zsh = shutil.which("zsh") or "/bin/zsh"
+    user = os.environ.get("SUDO_USER") or os.environ.get("USER") or getpass.getuser()
+    if not Path(zsh).exists():
+        warn("zsh missing; login shell unchanged")
+        return
+    current = run_allowfail("getent", "passwd", user, capture_output=True, text=True).stdout.strip().split(":")
+    if len(current) >= 7 and current[-1] == zsh:
+        ok("login shell already zsh")
+        return
+    run_allowfail("chsh", "-s", zsh, user, sudo=True)
+    current = run_allowfail("getent", "passwd", user, capture_output=True, text=True).stdout.strip().split(":")
+    if len(current) >= 7 and current[-1] == zsh:
+        ok("login shell set to zsh")
+    else:
+        warn("could not change login shell automatically; kitty still starts zsh")
+
+def post_apply():
+    setup_shell_and_tty1_autostart()
+    ensure_zsh_login_shell()
+    apply_default_wallpaper_and_terminal()
+    apply_gtk_theme()
+    run_allowfail("hyprctl", "reload", stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    run_allowfail("pkill", "-SIGUSR2", "waybar", stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+
+def update_config():
+    logo()
+    ARCHX_CACHE.mkdir(parents=True, exist_ok=True)
+    ts = time.strftime("%Y%m%d_%H%M%S")
+    diff_file = ARCHX_CACHE / f"diff-{ts}"
+    warn(f"This will sync dotfiles from {USR_REPO}")
+    warn(f"Diffs saved to {diff_file}")
+    if SKIP_PACKAGES:
+        warn("ARCHX_SKIP_PACKAGES=1: package install skipped; applying configs only")
+    if not AUTO_YES and input("  Continue? [y/N]: ").strip().lower() != "y":
+        return
+
+    if not ensure_network():
+        return
+
+    if not SKIP_PACKAGES:
+        _install_pkg_list(
+            PKG_OFFICIAL, "--END OF MINIMAL INSTALL--",
+            lambda p: run("pacman", "-S", "--noconfirm", "--needed", p, sudo=True),
+            "Installing official packages",
+        )
+        _install_pkg_list(
+            PKG_AUR, "--END OF MINIMAL INSTALL--",
+            lambda p: run("yay", "-S", "--quiet", "--noconfirm", "--needed", p),
+            "Installing AUR packages",
+        )
+    else:
+        ok("package phase skipped")
+
+    if not SKIP_PACKAGES and not has("ctpv-x"):
+        install_ctpv()
+        ok("ctpv installed")
+
+    if has("desktop-hide"):
+        run_allowfail("desktop-hide")
+
+    if CACHE.exists():
+        ok(f"Saving diffs to {diff_file}")
+        with open(diff_file, "w") as df:
+            for f in sorted(CACHE.rglob("*")):
+                if f.is_dir() or _skip(f):
+                    continue
+                rel = f.relative_to(CACHE)
+                target = HOME / rel
+                if target.exists():
+                    r = run_allowfail("diff", "-uN", str(f), str(target), capture_output=True, text=True)
+                    if r.stdout:
+                        df.write(r.stdout)
+                else:
+                    df.write(f"File not found: {rel}\n")
+
+    CACHE.parent.mkdir(parents=True, exist_ok=True)
+    if USR_DIR:
+        src = Path(USR_DIR).expanduser()
+        if not src.exists():
+            raise FileNotFoundError(f"ARCHX_USR_DIR does not exist: {src}")
+        shutil.rmtree(CACHE, ignore_errors=True)
+        shutil.copytree(src, CACHE, dirs_exist_ok=True, ignore=shutil.ignore_patterns(".git", ".mozilla", ".cache", "__pycache__", "*.pyc", "*.pyo", "Cache", "cache2"))
+    elif CACHE.exists() and (CACHE / ".git").exists():
+        run_allowfail("git", _git_dir(), "stash", stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        if USR_REF:
+            run_allowfail("git", _git_dir(), "fetch", "origin", USR_REF, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            run_allowfail("git", _git_dir(), "checkout", USR_REF, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        r = run_allowfail("git", _git_dir(), "pull", "--rebase", stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        if r.returncode != 0:
+            warn("cached git pull failed; recloning usr")
+            _clone_usr_repo()
+    else:
+        _clone_usr_repo()
+
+    _sync_usr_tree()
+    for p in [HOME / ".git", HOME / "README.md", HOME / "LICENSE"]:
+        if p.is_dir():
+            shutil.rmtree(p, ignore_errors=True)
+        else:
+            p.unlink(missing_ok=True)
+
+    post_apply()
+
+def _skip(p):
+    name = p.name
+    rel = str(p.relative_to(CACHE))
+    return (name in ("README.md", "LICENSE")
+            or rel.startswith(".git")
+            or rel.startswith(".mozilla")
+            or rel.startswith(".cache"))
+
+
+# ── System Setup ─────────────────────────────────────────
+
+PREINSTALL_BANNER = r"""
+___________________________
+  Hyprland post install   /
+_________________________/
+
+"""
+
+FINAL_BANNER = r"""
+___________________________
+  Hyprland final setup    /
+_________________________
+
+"""
+
+
+def online():
+    for host in ("archlinux.org", "github.com", "1.1.1.1"):
+        r = run_allowfail("ping", "-c", "1", "-W", "2", host,
+                          stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        if r.returncode == 0:
+            return True
+    return False
+
+
+def _wifi_nmcli():
+    run_allowfail("rfkill", "unblock", "wifi", sudo=True,
+                  stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    run_allowfail("systemctl", "enable", "--now", "NetworkManager", sudo=True,
+                  stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    run_allowfail("nmcli", "radio", "wifi", "on",
+                  stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+    warn("Scanning networks with nmcli…")
+    r = run_allowfail("nmcli", "-t", "-f", "SSID,SECURITY", "device", "wifi", "list",
+                      capture_output=True, text=True)
+    if r.returncode != 0 or not r.stdout.strip():
+        return False
+
+    networks = []
+    seen = set()
+    for line in r.stdout.strip().splitlines():
+        ssid, _, sec = line.partition(":")
+        ssid = ssid.replace(r"\:", ":").strip()
+        if ssid and ssid not in seen:
+            seen.add(ssid)
+            networks.append((ssid, sec.strip()))
+
+    if not networks:
+        return False
+
+    print(f"\n  {'#':>3}  {'SSID':<30}  {'Security':<15}")
+    print(f"  {'─'*3}  {'─'*30}  {'─'*15}")
+    for i, (ssid, sec) in enumerate(networks, 1):
+        print(f"  {i:>3}  {ssid:<30}  {(sec or 'Open'):<15}")
+
+    try:
+        idx = int(input("\n  Select network (0 to skip): ").strip() or "0")
+        if idx <= 0 or idx > len(networks):
+            return False
+    except ValueError:
+        return False
+
+    ssid, sec = networks[idx - 1]
+    password = getpass.getpass("  Password (empty for open): ") if sec else ""
+    ok(f"Connecting to {ssid} …")
+    if password:
+        r = run_allowfail("nmcli", "device", "wifi", "connect", ssid, "password", password, sudo=True)
+    else:
+        r = run_allowfail("nmcli", "device", "wifi", "connect", ssid, sudo=True)
+    return r.returncode == 0
+
+
+def _wifi_iwctl():
+    run_allowfail("rfkill", "unblock", "wifi", sudo=True,
+                  stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    run_allowfail("systemctl", "start", "iwd", sudo=True,
+                  stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    print()
+    run_allowfail("iwctl", "device", "list")
+    dev = input("  Device: ").strip()
+    if not dev:
+        return False
+    run_allowfail("iwctl", "station", dev, "scan")
+    run_allowfail("iwctl", "station", dev, "get-networks")
+    ssid = input("  SSID: ").strip()
+    if not ssid:
+        return False
+    password = getpass.getpass("  Password (empty for open): ")
+    if password:
+        r = run_allowfail("iwctl", "--passphrase", password, "station", dev, "connect", ssid)
+    else:
+        r = run_allowfail("iwctl", "station", dev, "connect", ssid)
+    return r.returncode == 0
+
+
+def wifi_connect():
+    """Connect Wi-Fi with nmcli, iwctl, or legacy wifi-menu."""
+    if has("nmcli") and _wifi_nmcli():
+        ok("Wi-Fi connected")
+        return True
+    if has("iwctl") and _wifi_iwctl():
+        ok("Wi-Fi connected")
+        return True
+    if has("wifi-menu"):
+        return run_allowfail("wifi-menu", sudo=True).returncode == 0
+    fail("No Wi-Fi helper found. Install/use NetworkManager, iwd, or wifi-menu.")
+    return False
+
+
+def ensure_network():
+    if online():
+        ok("Network online")
+        return True
+    warn("Network offline — opening Wi-Fi setup")
+    wifi_connect()
+    if online():
+        ok("Network online")
+        return True
+    fail("Still offline; connect first and rerun archx")
+    return False
+
+
+def setup_system():
+    """Full system setup — preinstall (live) or final (chroot)."""
+    if os.geteuid() != 0:
+        # ── Preinstall (live environment) ──
+        print(PREINSTALL_BANNER)
+        ensure_network()
+
+        warn("Running post-install setup…")
+        ensure_deps()
+        update_config()
+    else:
+        # ── Final install (chroot, running as root) ──
+        print(FINAL_BANNER)
+
+        user = run_allowfail("logname", capture_output=True, text=True).stdout.strip() or "nobody"
+        user_home = Path(f"/home/{user}")
+
+        warn("Set root password")
+        run("passwd", "root")
+
+        pos = input("  Layout? [us]: ").strip() or "us"
+        run_allowfail("localectl", "set-keymap", "--no-ask-password", pos)
+        run_allowfail("localectl", "set-x11-keymap", "--no-ask-password", pos)
+        tz = run_allowfail("curl", "-s", "--fail", "https://ipapi.co/timezone",
+                           capture_output=True, text=True).stdout.strip()
+        if tz:
+            run_allowfail("timedatectl", "--no-ask-password", "set-timezone", tz)
+        run_allowfail("timedatectl", "--no-ask-password", "set-ntp", "1")
+        run_allowfail("localectl", "--no-ask-password", "set-locale",
+                      "LANG=en_US.UTF-8", "LC_TIME=en_US.UTF-8")
+
+        if input("  Is laptop? [y/N]: ").strip().lower() == "y":
+            ok("Laptop — installing TLP, ACPI …")
+            run("pacman", "-S", "--needed", "--noconfirm",
+                "sof-firmware", "tlp", "acpi", "acpid")
+            tlp_cfg = "/etc/tlp.conf"
+            if Path(tlp_cfg).exists():
+                for sed_cmd in [
+                    r's/^#\(SOUND_POWER_SAVE_ON_AC=\).*/\10/',
+                    r's/^#\(START_CHARGE_THRESH_BAT0=\).*/\185/',
+                    r's/^#\(STOP_CHARGE_THRESH_BAT0=\).*/\190/',
+                    r's/^#\(START_CHARGE_THRESH_BAT1=\).*/\185/',
+                    r's/^#\(STOP_CHARGE_THRESH_BAT1=\).*/\190/',
+                ]:
+                    run_allowfail("sed", "-i", "-E", sed_cmd, tlp_cfg)
+            run("systemctl", "enable", "tlp.service")
+
+        gpu = run_allowfail("lspci", capture_output=True, text=True).stdout
+        if "NVIDIA" in gpu or "GeForce" in gpu:
+            ok("NVIDIA — installing envycontrol")
+            if not has("yay"):
+                _install_yay()
+            if has("yay"):
+                run("yay", "-S", "--noconfirm", "--needed", "envycontrol")
+                run_allowfail("envycontrol", "-s", "nvidia", "--force-comp")
+
+        run_allowfail("xset", "r", "rate", "560", "25")
+
+        # Cleanup orphans + cache
+        orphans = run_allowfail("pacman", "-Qdtq", capture_output=True, text=True).stdout.strip()
+        if orphans:
+            run("pacman", "-Rns", "--noconfirm", *orphans.splitlines())
+        run_allowfail("paccache", "-r")
+        run_allowfail("sysctl", "--system")
+
+        run("chown", "-R", f"{user}:{user}", str(user_home))
+        run("chmod", "755", str(user_home))
+
+        for f in ["wifi-menu.sh"]:
+            (user_home / f).unlink(missing_ok=True)
+
+        ok("All done — rebooting in 5s …")
+        time.sleep(5)
+        run("reboot")
+
+
+# ── Menu ────────────────────────────────────────────────
+
+def pick(options, prompt="Select: "):
+    try:
+        is_tty = os.isatty(sys.stdout.fileno())
+    except Exception:
+        is_tty = False
+    use = has("fzf-tmux") and is_tty
+    if use:
+        r = subprocess.run(
+            ["fzf-tmux", "--prompt", prompt, "-x", "--height", os.environ.get("FZF_TMUX_HEIGHT", "40%"),
+             "-m", "--reverse", "--ansi"],
+            input="\n".join(options), capture_output=True, text=True)
+        return r.stdout.strip() or None
+
+    print()
+    for i, o in enumerate(options, 1):
+        print(f"  {i}. {o}")
+    try:
+        c = input(f"\n  {prompt}").strip()
+        return options[int(c) - 1]
+    except (ValueError, IndexError):
+        return None
+
+
+def run_menu():
+    ensure_deps()
+    root = True
+
+    while root:
+        logo()
+        available = SELF.exists()
+        has_updates = check_updates()
+        if has_updates:
+            print()
+
+        if available:
+            sel = pick(["Install", "Setup", "Update", "Quit"])
+        else:
+            sel = pick(["Configs", "Quit"])
+
+        if sel in ("Update", "Configs"):
+            try:
+                update_config()
+            except Exception as e:
+                fail(f"Update failed: {e}")
+                input("  Press Enter …")
+            continue
+        if sel == "Setup":
+            try:
+                setup_system()
+            except Exception as e:
+                fail(f"Setup failed: {e}")
+                input("  Press Enter …")
+            continue
+        if sel == "Quit":
+            return
+        if sel != "Install":
+            continue
+
+        # Install menu
+        while True:
+            logo()
+            sel = pick(["Services", "Apps", "Back"])
+            if sel == "Back":
+                break
+            if sel == "Services":
+                logo()
+                sel = pick(["Printers", "Samba", "Back"])
+                try:
+                    if sel == "Printers":
+                        install_printers()
+                    elif sel == "Samba":
+                        install_samba()
+                    elif sel == "Back":
+                        continue
+                    if sel and sel != "Back":
+                        ok("Done")
+                        input("  Press Enter …")
+                except Exception as e:
+                    fail(f"Failed: {e}")
+                    input("  Press Enter …")
+            elif sel == "Apps":
+                logo()
+                sel = pick(["Upgrade", "Remap", "Wine", "Ctpv", "Back"])
+                try:
+                    if sel == "Upgrade":
+                        run("yay", "-Syu", "--noconfirm")
+                    elif sel == "Remap":
+                        install_remap()
+                    elif sel == "Wine":
+                        install_wine()
+                    elif sel == "Ctpv":
+                        install_ctpv()
+                    elif sel == "Back":
+                        continue
+                    if sel and sel != "Back":
+                        ok("Done")
+                        input("  Press Enter …")
+                except Exception as e:
+                    fail(f"Failed: {e}")
+                    input("  Press Enter …")
+
+
+# ── Entry ───────────────────────────────────────────────
+
+def main():
+    global AUTO_YES
+    p = argparse.ArgumentParser(description="ArchX — Hyprland toolbox")
+    p.add_argument("cmd", nargs="?", choices=["setup", "update", "updates", "wifi"], help="Run setup/update/wifi")
+    p.add_argument("--yes", "-y", action="store_true", help="Do not prompt before syncing configs")
+    args = p.parse_args()
+    AUTO_YES = AUTO_YES or args.yes
+
+    signal.signal(signal.SIGINT, lambda s, f: sys.exit(0))
+    signal.signal(signal.SIGTERM, lambda s, f: sys.exit(0))
+
+    try:
+        if args.cmd == "updates":
+            check_updates_notify()
+        elif args.cmd in ("setup", "update"):
+            ensure_deps()
+            update_config()
+        elif args.cmd == "wifi":
+            wifi_connect()
+        else:
+            run_menu()
+    except KeyboardInterrupt:
+        print()
+        sys.exit(0)
+
+
+if __name__ == "__main__":
+    main()

@@ -384,38 +384,29 @@ setwm() { # Xorg initrc sed last line "exec" to be "exec '$WM'"
     fi
 }
 
-start() { # Simply makes you can start X with start $WM like "start awesome"
-    if [[ $1 == "-h" ]]; then
-        echo -e "example-> start <wm>\n -t = temporary set wm \"not persistent\""
-        return 0
-    elif [[ -z $1 ]]; then
-        if cat /etc/X11/xinit/xinitrc | grep 'exec hyperland' ; then
-            Hyprland
-        else
-            startx
-        fi
-    else
-        if [[ $1 == "term" ]]; then
+start() { # Start Hyprland by default, or an explicit X11 WM with start <wm>
+    case "$1" in
+        -h|--help)
+            echo -e "example-> start hyprland\nexample-> start dwm\nterm = start terminal xinitrc"
+            ;;
+        ""|hyprland|Hyprland)
+            command -v Hyprland >/dev/null 2>&1 && exec Hyprland
+            echo "Hyprland not found"
+            return 1
+            ;;
+        term)
             startx /etc/X11/xinit/xinitrcterm
-        else
-            if [[ $2 == "-t" ]]; then
-                if [[ $1 == "hyperland" ]]; then
-                    Hyprland
-                else
-                    [[ ! -f "$HOME/.local/xinit/" ]] && mkdir -p "$HOME/.local/xinit/"
-                    tmpinitrc="$HOME/.local/xinit/xinitrc$1"
-                    setwm "$1" "$tmpinitrc"
-                    startx "$tmpinitrc"
-                fi
+            ;;
+        *)
+            if [[ "$2" == "-t" ]]; then
+                mkdir -p "$HOME/.local/xinit"
+                tmpinitrc="$HOME/.local/xinit/xinitrc$1"
+                setwm "$1" "$tmpinitrc"
+                startx "$tmpinitrc"
             else
-                if [[ $1 == "hyperland" ]]; then
-                    setwm "$1"
-                    Hyprland
-                else
-                    setwm "$1"
-                    startx
-                fi
+                setwm "$1"
+                startx
             fi
-        fi
-    fi
+            ;;
+    esac
 }

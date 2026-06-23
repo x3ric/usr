@@ -1,0 +1,139 @@
+#!/bin/bash
+# Linux From Scratch in a WM
+need "kmod"
+need "bc"
+need "inetutils"
+need "libelf"
+need "cpio"
+need "git"
+need "qemu"
+need "musl"
+need "kernel-headers-musl"
+need "ncurses"
+# Main Kernel download
+DIRLX="$HOME/.local/opt/mklinux"
+function clone() {
+    mkdir -p "$DIRLX" 2> /dev/null
+    cd "$DIRLX"
+    if [[ ! -d "$DIRLX/linux" ]]; then
+        git clone --depth 1 https://github.com/torvalds/linux.git
+    else
+        cd "$DIRLX/linux"
+        git stash
+        git pull --rebase
+    fi
+    if [[ ! -d "$DIRLX/busybox" ]]; then
+        git clone --depth 1 https://git.busybox.net/busybox
+    else
+        cd "$DIRLX/busybox"
+        git stash
+        git pull --rebase
+    fi
+}
+function replacebuiltin() {
+    sudo mkdir -p "$DIRLX/bootloader/initramfs/sbin"
+    cd "$DIRLX/bootloader/initramfs/sbin"
+    sudo rm -rf reboot
+    sudo rm -rf "$DIRLX/bootloader/initramfs/bin/reboot"
+    echo -e "#!/bin/sh\necho 1 > /proc/sys/kernel/sysrq\necho b > /proc/sysrq-trigger\n" | sudo tee reboot > /dev/null &&sudo chmod +x reboot
+    sudo rm -rf poweroff
+    sudo rm -rf "$DIRLX/bootloader/initramfs/bin/poweroff"
+    echo -e "#!/bin/sh\necho o > /proc/sysrq-trigger\n" | sudo tee poweroff > /dev/null && sudo chmod +x poweroff
+}
+function replacekeymap() {
+    KEYMAP=$(setxkbmap -query | awk '/layout:/ {print $2}')
+    sudo mkdir -p "$DIRLX/bootloader/initramfs/usr/share"
+    loadkeys -b "/usr/share/kbd/keymaps/i386/qwerty/${KEYMAP}.map.gz" | sudo tee "$DIRLX/bootloader/initramfs/usr/share/key.bmap" > /dev/null
+}
+function image() {
+    replacebuiltin
+    replacekeymap
+    cd "$DIRLX/bootloader/initramfs/"
+    touch ./init 2> /dev/null
+    PROC='\nmount -t devtmpfs devtmpfs /dev\nmkdir /proc && mount -t proc proc /proc\ntouch "$(cttyhack)"\ntouch /dev/null\nmount /dev/sda /root\nrm -rf /root/lost+found/\nif [[ ! -f /root/.history ]]; then\ntouch /root/.history\nfi\nexport HISTFILE=/root/.history'
+    WIFI='\nifconfig eth0 10.0.2.15 netmask 255.255.255.0 up && route add default gw 10.0.2.2 && mkdir etc && touch /etc/resolv.conf && echo -e "nameserver 8.8.8.8\nnameserver 8.8.4.4" > /etc/resolv.conf'
+    KEYMAP='\nloadkmap < /usr/share/key.bmap'
+    SHELL=''$KEYMAP$PROC$WIFI'\ndmesg -n 3\ncd root\nwhile true; do\n setsid cttyhack sh\n /bin/sh +m\ndone'
+    echo -e "init file\n"
+    echo -e '#!/bin/sh\n'$SHELL'' | sudo tee ./init
+    sudo chmod +x "$DIRLX/bootloader/initramfs/init" 2> /dev/null
+    sudo rm ./linuxrc 2> /dev/null
+    sudo rm -rf ../init.cpio 
+    find . -print0 | cpio --null -ov --format=newc | gzip > ../init.cpio
+    if [[ ! -f "$DIRLX/bootloader/disk.img" ]]; then
+        cd "$DIRLX/bootloader/"
+        qemu-img create -f raw "$DIRLX/bootloader/disk.img" 1G
+        mkfs.ext4 "$DIRLX/bootloader/disk.img"
+    fi
+}
+function install() {
+    mkdir -p "$DIRLX/bootloader" 2> /dev/null
+    cd "$DIRLX/linux"
+    if [ ! -f "$DIRLX/bootloader/initramfs/bzImage" ] || [[ "$1" == "-m" ]]; then
+        echo "System Linux building"
+        rm -rf .config
+        if [[ -f "$HOME/.cache/mklinux/.config" ]]; then
+            zcat /proc/config.gz > $HOME/.cache/mklinux/.config
+        fi
+        cp $HOME/.cache/mklinux/.config ./.config
+        make mrproper
+        if [[ ! -f "$DIRLX/linux/.config" ]]; then
+            make defconfig
+        fi
+        if [[ "$1" == "-m" ]]; then
+            make nconfig
+        fi
+        make -j "$(nproc)"
+        cp ./arch/x86/boot/bzImage "$DIRLX/bootloader"
+    else
+        make -j "$(nproc)"
+        cp ./arch/x86/boot/bzImage "$DIRLX/bootloader"
+    fi
+    cd "$DIRLX/busybox"
+    if [ ! -d "$DIRLX/bootloader/initramfs/bin" ]; then 
+        make CC=musl-gcc distclean
+        make CC=musl-gcc defconfig
+        sed -i 's/# CONFIG_STATIC is not set/CONFIG_STATIC=y/' "$DIRLX/busybox/.config"
+        make CC=musl-gcc -j "$(nproc)"
+        mkdir "../bootloader/initramfs" 2> /dev/null
+        sudo make CC="musl-gcc" CONFIG_PREFIX="$DIRLX/bootloader/initramfs" install
+    fi
+    cd "$DIRLX/bootloader/initramfs/"
+    # imported bins
+        mkdir -p "$DIRLX/bootloader/initramfs/usr/bin"
+        cd "$DIRLX/bootloader/initramfs/usr/bin"
+    image
+}
+function run() {
+    if [[ ! -d "$DIRLX/bootloader" ]] || [[ ! -z $1 ]]; then
+        install "$1"
+    else
+        image
+    fi
+    echo "System Linux running"
+    RAM_MB=$(free -m | awk '/^Mem:/ {print $2}')
+    RAM_HALF=$((RAM_MB / 2))
+    qemu-system-x86_64 -drive file="$DIRLX/bootloader/disk.img",format=raw,if=ide -kernel "$DIRLX/bootloader/bzImage" -initrd "$DIRLX/bootloader/init.cpio" \
+      -m "$RAM_HALF_MB" -display sdl,gl=on -net user -net nic -device virtio-keyboard -device virtio-mouse 2> /dev/null
+}
+if [[ $1 == "-c" ]]; then
+    sudo rm -rf "$DIRLX/bootloader"
+    exit 0
+elif [[ $1 == "-r" ]]; then
+    sudo rm -rf "$DIRLX"
+    exit 0
+elif [[ $1 == "-m" ]]; then
+    sudo rm -rf "$DIRLX/bootloader"
+    clone
+    run "$1"
+elif [[ $1 == "--help" || "$1" == "-h" ]]; then
+    echo -e "Linux From Scratch\n -c = clean previous build\n -rc = recompile linux\n -r = remove all\n -m = nconfig"
+    exit 0
+elif [[ $1 == "-rc" ]] ; then
+    run "$1"
+elif [[ -d "$DIRLX" ]]; then
+    run
+else
+    clone
+    run
+fi

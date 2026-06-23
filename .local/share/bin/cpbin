@@ -1,0 +1,36 @@
+#!/bin/bash
+# Copy binaries with dependencies to a specified folder
+usage() {
+    echo "Usage: $0 <command> <path>"
+    exit 1
+}
+if [[ "$#" -lt 1 ]]; then
+    usage
+fi
+command="$1"
+target_path="${2:-$(pwd)}"
+program=$(type -p "$command")
+if [[ -z "$program" ]]; then
+    echo "Error: Command '$command' not found."
+    exit 1
+fi
+copy_to() {
+    local source="$1"
+    local destination="$2"
+    sudo mkdir -p "$destination"
+    echo "Copying $source to $destination"
+    sudo cp "$source" "$destination"
+}
+copy_to "$program" "$target_path/bin"
+copy_to "$program" "$target_path/usr/bin"
+echo "Finding and copying dependencies of $program..."
+while IFS= read -r dep; do
+    if [[ -f "$dep" ]]; then
+        destination="$target_path$(dirname "$dep")"
+        copy_to "$dep" "$destination"
+    fi
+done < <(ldd "$program" | awk '/=>/{print $(NF-1)}')
+sudo cp -r "$target_path/usr/lib" "$target_path/lib"
+sudo cp -r "$target_path/usr/lib64" "$target_path/lib64"
+echo "Copy operation completed successfully."
+echo -e "You can chroot into it with: sudo chroot \"$target_path\""

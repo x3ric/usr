@@ -1,3 +1,22 @@
-#!/bin/bash
-wal=$(cat $HOME/.cache/wal/wal | sed 's|$HOME|'"$HOME"'|')
-swaybg -i "$wal" -m fill
+#!/usr/bin/env bash
+set -u
+wall_file="$HOME/.cache/wal/wal"
+default_wall="$HOME/Pictures/Wallpapers/Nature/Nature.png"
+wall=""
+if [[ -r "$wall_file" ]]; then
+  wall="$(<"$wall_file")"
+  wall="${wall/#\~/$HOME}"
+  wall="${wall//\$HOME/$HOME}"
+fi
+[[ -n "${wall:-}" && -f "$wall" ]] || wall="$default_wall"
+if [[ ! -f "$wall" ]]; then
+  printf 'No wallpaper found. Expected: %s\n' "$wall" >&2
+  exit 0
+fi
+mkdir -p "$HOME/.cache/wal"
+printf '%s\n' "$wall" > "$wall_file"
+pkill -x swaybg >/dev/null 2>&1 || true
+if command -v swaybg >/dev/null 2>&1; then
+  exec swaybg -i "$wall" -m fill
+fi
+printf 'swaybg missing; wallpaper cached: %s\n' "$wall" >&2

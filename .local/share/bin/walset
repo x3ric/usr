@@ -1,97 +1,276 @@
-#!/bin/zsh -i
-# Pywall colors and background
-usage="Usage: walset [OPTIONS]\n Options:
-    -c,              Color set.
-    -w,              Wallpaper set.
-    -wc,             Wallpaper and Color set.
-    -h, --help       Display this help message."
-e=""
-c=""
-w=""
-while (( $# > 0 )); do
-    case "$1" in
-    -e) e="1" ;;
-    -c) c="1" ;;
-    -w) w="1" ;;
-    -wc|-cw) w="1" ; c="1" ;;
-    -h|--help)
-        echo -e "$usage"
-        exit 0
-        ;;
-    *)
-        echo "Error: Unknown option: $1"
-        echo -e "$usage"
-        exit 1
-        ;;
-    esac
-    shift
-done
-theme=$(awk -F '"' '/ theme =/ {print $2}' ~/.config/awesome/rc.lua)
-theme_path="$HOME/.config/awesome/themes/$theme/theme.lua"
-wallpaper_current="$(awk -F '"' '/self\.wallpaper/ { print $2 }' "$theme_path")"
-wallpapers=("${(@f)$(find "$HOME/.config/awesome/themes/$theme/" "$HOME/Pictures/Wallpapers" -maxdepth 2 -type f -iregex '.*\.\(jpe?g\|png\)' -not -name "$(basename "$wallpaper_current")")}")
-colorset() {
-    wal -i "$wallpaper_path"
-    color_values=(
-        "colormain=$(awk 'NR==6' "$palette_path")"
-        "colorurgent=$(awk 'NR==5' "$palette_path")"
-    )
-    theme_file="$(<"$theme_path")"
-    for color in "${color_values[@]}"; do
-        color_name="${color%%=*}"
-        color_value="${color#*=}"
-        theme_file="$(echo "$theme_file" | sed -E "s/^theme\.$color_name.*$/theme.$color_name = '$color_value'/")"
-    done
-    echo "$theme_file" > "$theme_path"
+#!/usr/bin/env bash
+# walset — ArchX wallpaper + base16/wal color writer.
+# Default is deterministic Nature.png + the ArchX nature palette.
+set -Eeuo pipefail
+
+usage() {
+  cat <<'EOF'
+Usage: walset [OPTIONS]
+
+Options:
+  -c              refresh colors only from current/default wallpaper
+  -w              pick/set wallpaper only
+  -wc             pick/set wallpaper and refresh colors (default)
+  -n, --nature    reset to Nature.png and the ArchX nature palette
+  -h, --help      show help
+EOF
 }
-if [[ ${#wallpapers[@]} -eq 0 ]]; then
-    echo "No wallpapers found in $HOME/Pictures/Wallpapers"
-    exit 1
+
+want_colors=0
+want_wall=0
+force_nature=0
+while (($#)); do
+  case "$1" in
+    -c) want_colors=1 ;;
+    -w) want_wall=1 ;;
+    -wc|-cw) want_wall=1; want_colors=1 ;;
+    -n|--nature) want_wall=1; want_colors=1; force_nature=1 ;;
+    -h|--help) usage; exit 0 ;;
+    *) printf 'Unknown option: %s\n' "$1" >&2; usage; exit 1 ;;
+  esac
+  shift
+done
+if (( want_colors == 0 && want_wall == 0 )); then
+  want_colors=1
+  want_wall=1
 fi
-selection=$(printf '%s\n' "${wallpapers[@]}" | fzf-images )
-if [[ -z "$selection" ]]; then
-    echo "No wallpaper selected."
-    exit 1
+
+wall_dir="${WALLPAPER_DIR:-$HOME/Pictures/Wallpapers}"
+default_wall="${ARCHX_DEFAULT_WALLPAPER:-$HOME/Pictures/Wallpapers/Nature/Nature.png}"
+wal_cache="$HOME/.cache/wal"
+wal_file="$wal_cache/wal"
+kitty_dir="$HOME/.config/kitty"
+kitty_colors="$kitty_dir/colors.conf"
+waybar_colors="$wal_cache/colors-waybar.css"
+mkdir -p "$wal_cache" "$kitty_dir"
+
+colors=(
+  '#0b0b0b' '#48534A' '#516D55' '#5B5B69'
+  '#658B5F' '#564F96' '#645B97' '#c0acd1'
+  '#867892' '#48534A' '#516D55' '#5B5B69'
+  '#658B5F' '#564F96' '#645B97' '#c0acd1'
+)
+
+expand_path() {
+  local p="${1:-}"
+  p="${p/#\~/$HOME}"
+  p="${p//\$HOME/$HOME}"
+  printf '%s\n' "$p"
+}
+
+current_wall() {
+  local x=""
+  [[ -r "$wal_file" ]] && x="$(<"$wal_file")"
+  x="$(expand_path "$x")"
+  if [[ -n "$x" && -f "$x" ]]; then
+    printf '%s\n' "$x"
+  elif [[ -f "$default_wall" ]]; then
+    printf '%s\n' "$default_wall"
+  else
+    find "$wall_dir" -maxdepth 2 -type f \( -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.png' -o -iname '*.webp' \) 2>/dev/null | sort | head -n 1
+  fi
+}
+
+write_nature_palette() {
+  printf '%s\n' "${colors[@]}" > "$wal_cache/colors"
+
+  cat > "$wal_cache/colors-kitty.conf" <<EOF
+foreground         ${colors[7]}
+background         ${colors[0]}
+background_opacity 0.92
+cursor             ${colors[7]}
+selection_foreground ${colors[0]}
+selection_background ${colors[7]}
+
+active_tab_foreground     ${colors[0]}
+active_tab_background     ${colors[7]}
+inactive_tab_foreground   ${colors[7]}
+inactive_tab_background   ${colors[0]}
+
+active_border_color   ${colors[7]}
+inactive_border_color ${colors[1]}
+bell_border_color     ${colors[4]}
+
+color0       ${colors[0]}
+color8       ${colors[8]}
+color1       ${colors[1]}
+color9       ${colors[9]}
+color2       ${colors[2]}
+color10      ${colors[10]}
+color3       ${colors[3]}
+color11      ${colors[11]}
+color4       ${colors[4]}
+color12      ${colors[12]}
+color5       ${colors[5]}
+color13      ${colors[13]}
+color6       ${colors[6]}
+color14      ${colors[14]}
+color7       ${colors[7]}
+color15      ${colors[15]}
+EOF
+  cp "$wal_cache/colors-kitty.conf" "$kitty_colors" 2>/dev/null || true
+
+  cat > "$waybar_colors" <<EOF
+@define-color foreground ${colors[7]};
+@define-color background ${colors[0]};
+@define-color cursor ${colors[7]};
+@define-color color0 ${colors[0]};
+@define-color color1 ${colors[1]};
+@define-color color2 ${colors[2]};
+@define-color color3 ${colors[3]};
+@define-color color4 ${colors[4]};
+@define-color color5 ${colors[5]};
+@define-color color6 ${colors[6]};
+@define-color color7 ${colors[7]};
+@define-color color8 ${colors[8]};
+@define-color color9 ${colors[9]};
+@define-color color10 ${colors[10]};
+@define-color color11 ${colors[11]};
+@define-color color12 ${colors[12]};
+@define-color color13 ${colors[13]};
+@define-color color14 ${colors[14]};
+@define-color color15 ${colors[15]};
+EOF
+
+  cat > "$wal_cache/colors.css" <<EOF
+:root {
+  --foreground: ${colors[7]};
+  --background: ${colors[0]};
+  --color0: ${colors[0]};
+  --color1: ${colors[1]};
+  --color2: ${colors[2]};
+  --color3: ${colors[3]};
+  --color4: ${colors[4]};
+  --color5: ${colors[5]};
+  --color6: ${colors[6]};
+  --color7: ${colors[7]};
+  --color8: ${colors[8]};
+  --color9: ${colors[9]};
+  --color10: ${colors[10]};
+  --color11: ${colors[11]};
+  --color12: ${colors[12]};
+  --color13: ${colors[13]};
+  --color14: ${colors[14]};
+  --color15: ${colors[15]};
+}
+EOF
+
+  cat > "$wal_cache/colors-fzf.zsh" <<EOF
+# Generated by walset. Safe for zsh/bash source.
+if [ -z "\${ARCHX_FZF_COLORS_LOADED:-}" ]; then
+  export ARCHX_FZF_COLORS_LOADED=1
+  export FZF_DEFAULT_OPTS="--height=40% --layout=reverse --border=rounded --prompt=❯  --pointer=❯ --marker=+ --color=fg:${colors[7]},bg:${colors[0]},fg+:${colors[7]},bg+:${colors[1]},hl:${colors[4]},hl+:${colors[12]},info:${colors[6]},prompt:${colors[2]},pointer:${colors[7]},marker:${colors[5]},spinner:${colors[4]},header:${colors[3]},border:${colors[8]},gutter:${colors[0]} \${FZF_DEFAULT_OPTS:-}"
+  export FZF_CTRL_R_OPTS="--preview 'echo {}' --preview-window=down:3:hidden:wrap --bind 'ctrl-/:toggle-preview' \${FZF_CTRL_R_OPTS:-}"
+  export FZF_CTRL_T_OPTS="--preview 'fzf-preview {} 2>/dev/null || file -- {}' --preview-window=right:60%:wrap \${FZF_CTRL_T_OPTS:-}"
+  export FZF_ALT_C_OPTS="--preview 'ls -la --color=always {} 2>/dev/null | head -80' --preview-window=right:60%:wrap \${FZF_ALT_C_OPTS:-}"
 fi
-wallpaper_path="$(realpath "$selection")"
-palette_path="$HOME/.cache/wal/colors"
-if [[ -n "$c" && -n "$w" ]]; then # wallpaper selector to set walpaper and colors in awesomewm and other pywall supported
-    sudo clear
-    sed -i "s|self\.wallpaper =.*|self.wallpaper = \"$wallpaper_path\"|" "$theme_path"
-    colorset
-    pgrep swaybg >/dev/null 2>&1 && pkill swaybg && nohup $HOME/.config/hypr/bg >/dev/null 2>&1 &!
-    if pgrep -x "awesome" >/dev/null 2>&1; then
-    sleep 1 && awesome-refresh > /dev/null 2>&1
+EOF
+}
+
+write_wlogout_theme() {
+  local dir="$HOME/.config/wlogout"
+  mkdir -p "$dir"
+  cat > "$dir/style.css" <<'EOF'
+* {
+  background-image: none;
+  box-shadow: none;
+  font-family: FiraCode Nerd Font, Fira Code, monospace;
+  font-size: 16px;
+}
+window { background-color: rgba(11, 11, 11, 0.76); }
+button {
+  color: #c0acd1;
+  background-color: rgba(72, 83, 74, 0.50);
+  border: 2px solid rgba(192, 172, 209, 0.24);
+  border-radius: 18px;
+  margin: 14px;
+  min-width: 140px;
+  min-height: 120px;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 30%;
+  transition: 120ms ease-in-out;
+}
+button:hover, button:focus {
+  color: #0b0b0b;
+  background-color: #c0acd1;
+  border-color: #658B5F;
+}
+#lock { background-color: rgba(81, 109, 85, 0.56); }
+#logout { background-color: rgba(91, 91, 105, 0.56); }
+#suspend { background-color: rgba(101, 139, 95, 0.56); }
+#hibernate { background-color: rgba(86, 79, 150, 0.56); }
+#shutdown { background-color: rgba(100, 91, 151, 0.56); }
+#reboot { background-color: rgba(134, 120, 146, 0.56); }
+EOF
+}
+
+pick_wallpaper() {
+  if (( force_nature )) && [[ -f "$default_wall" ]]; then
+    printf '%s\n' "$default_wall"
+    return 0
+  fi
+
+  local -a walls=()
+  mapfile -t walls < <(find "$wall_dir" -maxdepth 2 -type f \( -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.png' -o -iname '*.webp' \) 2>/dev/null | sort)
+  if ((${#walls[@]} == 0)); then
+    current_wall
+    return 0
+  fi
+
+  if command -v fzf >/dev/null 2>&1; then
+    local preview='file -- {}'
+    if command -v fzf-preview >/dev/null 2>&1; then
+      preview='fzf-preview {}'
+    elif command -v chafa >/dev/null 2>&1; then
+      preview='chafa -C on -s ${FZF_PREVIEW_COLUMNS:-80}x${FZF_PREVIEW_LINES:-24} -- {}'
     fi
-    papirus-folders-autocolor
-    gtkset
-    sudo chmod a+rw /etc/vconsole.conf
-    ttywal       
-    echo "Wallpaper changed to: $selection"
-    exit 0
-elif [[ -n "$c" ]]; then # wallpaper selector to set colors in awesomewm and other pywall supported
-    colorset
-    if pgrep -x "awesome" >/dev/null 2>&1; then
-    sleep 1 && awesome-refresh > /dev/null 2>&1
-    fi
-    if pgrep -x "dwm" >/dev/null 2>&1; then
-    sleep 1 && kill -TERM $(pidof dwm) > /dev/null 2>&1
-    fi
-    exit 0
-elif [[ -n "$w" ]]; then # wallpaper selector to set walpaper in awesomewm and other pywall supported
-    sed -i "s|self\.wallpaper =.*|self.wallpaper = \"$wallpaper_path\"|" "$theme_path"
-    echo "$wallpaper_path" > "$HOME/.cache/wal/wal"
-    pgrep swaybg >/dev/null 2>&1 && pkill swaybg && nohup $HOME/.config/hypr/bg >/dev/null 2>&1 &!
-    if pgrep -x "awesome" >/dev/null 2>&1; then
-    sleep 1 && awesome-refresh > /dev/null 2>&1
-    fi
-    if pgrep -x "dwm" >/dev/null 2>&1; then
-    sleep 1 && kill -TERM $(pidof dwm) > /dev/null 2>&1
-    fi
-    echo "Wallpaper changed to: $selection"
-    exit 0
+    local query="Nature.png"
+    [[ -f "$default_wall" ]] && query="$(basename "$default_wall")"
+    printf '%s\n' "${walls[@]}" | fzf --cycle --preview-window=right:60% --preview="$preview" --prompt='Wallpaper ❯ ' --query="$query"
+  else
+    current_wall
+  fi
+}
+
+wallpaper=""
+if (( want_wall )); then
+  wallpaper="$(pick_wallpaper || true)"
+  [[ -z "$wallpaper" ]] && exit 1
+  wallpaper="$(realpath -- "$wallpaper")"
 else
-    echo "Error: No options specified. Use -h or --help for usage."
-    echo -e "$usage"
-    exit 1
+  wallpaper="$(current_wall)"
 fi
+
+if (( want_colors )); then
+  # Keep Nature exact/deterministic. For other wallpapers, try pywal but fall back to Nature palette.
+  if [[ "$wallpaper" == "$default_wall" ]] || (( force_nature )); then
+    write_nature_palette
+  elif command -v wal >/dev/null 2>&1 && [[ -n "$wallpaper" && -f "$wallpaper" ]]; then
+    wal -q -i "$wallpaper" || write_nature_palette
+    [[ -f "$wal_cache/colors-kitty.conf" ]] && cp "$wal_cache/colors-kitty.conf" "$kitty_colors" 2>/dev/null || true
+    [[ -f "$wal_cache/colors-fzf.zsh" ]] || write_nature_palette
+  else
+    write_nature_palette
+  fi
+  [[ -s "$wal_cache/colors" ]] || write_nature_palette
+  [[ -s "$kitty_colors" ]] || cp "$wal_cache/colors-kitty.conf" "$kitty_colors" 2>/dev/null || true
+  write_wlogout_theme
+fi
+
+if (( want_wall )); then
+  if [[ -n "$wallpaper" && -f "$wallpaper" ]]; then
+    printf '%s\n' "$wallpaper" > "$wal_file"
+  fi
+  pkill -x swaybg >/dev/null 2>&1 || true
+  if [[ -x "$HOME/.config/hypr/bg" ]]; then
+    nohup "$HOME/.config/hypr/bg" >/dev/null 2>&1 &
+  fi
+fi
+
+# Cosmetic refreshes must never ask for sudo or break walset.
+command -v gtkset >/dev/null 2>&1 && gtkset >/dev/null 2>&1 || true
+command -v hyprctl >/dev/null 2>&1 && hyprctl reload >/dev/null 2>&1 || true
+command -v pkill >/dev/null 2>&1 && pkill -SIGUSR2 waybar >/dev/null 2>&1 || true
+
+[[ -n "${wallpaper:-}" ]] && printf 'Wallpaper: %s\n' "$wallpaper" || printf 'Theme colors refreshed\n'

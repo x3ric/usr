@@ -1,0 +1,39 @@
+#!/bin/bash
+# Bluetooth fix to permit auto-pairing without pin 
+# https://wiki.archlinux.org/title/Gamepad#Pairing_via_Bluetooth
+CONFIG_FILE="/etc/bluetooth/input.conf"
+TEMP_FILE="/tmp/input.conf"
+classic_bonded_only_toggled=false
+userspace_hid_toggled=false
+while IFS= read -r line; do
+    if [[ $line =~ ^#?UserspaceHID=false ]]; then
+        if [[ $line =~ ^# ]]; then
+            echo "UserspaceHID=false" >> "$TEMP_FILE"
+        fi
+        userspace_hid_toggled=true
+        continue
+    fi
+    if [[ $line =~ ^#?ClassicBondedOnly=false ]]; then
+        if [[ $line =~ ^# ]]; then
+            
+            echo "ClassicBondedOnly=false" >> "$TEMP_FILE"
+        fi
+        classic_bonded_only_toggled=true
+        continue
+    fi
+    echo "$line" >> "$TEMP_FILE"
+done < "$CONFIG_FILE"
+if ! $classic_bonded_only_toggled; then
+    echo "ClassicBondedOnly=false" >> "$TEMP_FILE"
+fi
+if ! $userspace_hid_toggled; then
+    echo "UserspaceHID=false" >> "$TEMP_FILE"
+fi
+if ! $userspace_hid_toggled && ! $classic_bonded_only_toggled; then
+    echo -e "ClassicBondedOnly and UserspaceHID disabled\nin $CONFIG_FILE.\nconfig fixed"
+else
+    echo -e "ClassicBondedOnly and UserspaceHID enabled\nin $CONFIG_FILE.\nas default"
+fi
+sudo mv "$TEMP_FILE" "$CONFIG_FILE"
+sudo systemctl restart bluetooth.service
+sudo hciconfig hci0 reset

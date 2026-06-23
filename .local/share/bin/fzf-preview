@@ -1,23 +1,32 @@
-#!/bin/bash
-# Fzf preview
-file=${1/#\~\//$HOME/}
-type=$(file --dereference --mime -- "$file")
-if [[ ! $type =~ image/ ]]; then
-  if [[ $type =~ =binary ]]; then
-    file "$1"
-    exit
-  fi
-  zsh -ci 'highlight --force -i '"$file"' | bat --pager=never'
-  exit
-else
-  dim=${FZF_PREVIEW_COLUMNS}x${FZF_PREVIEW_LINES}
-  if [[ $KITTY_WINDOW_ID ]]; then
-    dim="${FZF_PREVIEW_COLUMNS}x${FZF_PREVIEW_LINES}@0x0"
-    kitty +kitten icat --scale-up --clear --transfer-mode=memory --stdin no --place "$dim" "$1"
-  elif command -v chafa > /dev/null; then
-    chafa -C on -s "$dim" "$1"
-  else
-    file "$file"
-  fi
-fi
+#!/usr/bin/env bash
+# fzf-preview — small, dependency-tolerant previewer for fzf.
+set -u
 
+file=${1/#\~\//$HOME/}
+[[ -e "$file" ]] || { printf 'missing: %s\n' "$file"; exit 0; }
+
+mime=$(file --dereference --brief --mime-type -- "$file" 2>/dev/null || printf unknown)
+case "$mime" in
+  image/*)
+    dim="${FZF_PREVIEW_COLUMNS:-80}x${FZF_PREVIEW_LINES:-24}"
+    if [[ -n "${KITTY_WINDOW_ID:-}" ]] && command -v kitty >/dev/null 2>&1; then
+      kitty +kitten icat --scale-up --clear --transfer-mode=memory --stdin no --place "${dim}@0x0" -- "$file" 2>/dev/null || file -- "$file"
+    elif command -v chafa >/dev/null 2>&1; then
+      chafa -C on -s "$dim" -- "$file" 2>/dev/null || file -- "$file"
+    else
+      file -- "$file"
+    fi
+    ;;
+  text/*|application/json|application/xml|application/x-shellscript)
+    if command -v bat >/dev/null 2>&1; then
+      bat --style=numbers --color=always --pager=never -- "$file" 2>/dev/null || cat -- "$file"
+    elif command -v highlight >/dev/null 2>&1; then
+      highlight --force -O ansi -- "$file" 2>/dev/null || cat -- "$file"
+    else
+      sed -n '1,200p' -- "$file"
+    fi
+    ;;
+  *)
+    file -- "$file"
+    ;;
+esac

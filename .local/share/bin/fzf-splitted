@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+# fzf-splitted — old usr helper, now color-safe through FZF_DEFAULT_OPTS.
+# Uses tmux popup when available, otherwise normal fzf.
+height="${FZF_TMUX_HEIGHT:-40%}"
+opts=(--height "$height" --layout=reverse --border=rounded --cycle)
+
+if command -v fzf-tmux >/dev/null 2>&1 && [ -n "${TMUX:-}" ]; then
+  exec fzf-tmux -p 80%,70% "${opts[@]}" "$@"
+fi
+
+exec fzf "${opts[@]}" "$@"

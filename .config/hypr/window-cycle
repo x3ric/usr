@@ -1,0 +1,85 @@
+#!/usr/bin/env python3
+"""Cycle focus through mapped windows in the current Hyprland workspace.
+
+This is workspace-local and index-based. It avoids Hyprland's direction-based
+movefocus and avoids cyclenext edge cases with floating/grouped windows.
+"""
+
+from __future__ import annotations
+
+import json
+import subprocess
+import sys
+from typing import Any
+
+
+def hypr_json(*args: str) -> Any:
+    out = subprocess.check_output(["hyprctl", *args, "-j"], text=True)
+    return json.loads(out)
+
+
+def dispatch(*args: str) -> None:
+    subprocess.run(["hyprctl", "dispatch", *args], check=False)
+
+
+def current_workspace_id() -> int | str | None:
+    try:
+        ws = hypr_json("activeworkspace")
+        return ws.get("id")
+    except Exception:
+        return None
+
+
+def active_address() -> str:
+    try:
+        client = hypr_json("activewindow")
+        return client.get("address", "") or ""
+    except Exception:
+        return ""
+
+
+def clients_for_workspace(ws_id: int | str | None) -> list[dict[str, Any]]:
+    if ws_id is None:
+        return []
+    clients = []
+    for c in hypr_json("clients"):
+        if not c.get("mapped", True) or c.get("hidden", False):
+            continue
+        if c.get("workspace", {}).get("id") != ws_id:
+            continue
+        addr = c.get("address")
+        if not addr:
+            continue
+        clients.append(c)
+
+    # Stable index order: top-to-bottom, left-to-right, then address as tie-breaker.
+    def key(c: dict[str, Any]) -> tuple[int, int, str]:
+        at = c.get("at") or [0, 0]
+        return (int(at[1]), int(at[0]), str(c.get("address", "")))
+
+    return sorted(clients, key=key)
+
+
+def main() -> int:
+    direction = (sys.argv[1] if len(sys.argv) > 1 else "next").lower()
+    step = -1 if direction in {"prev", "previous", "up", "-1"} else 1
+
+    ws_id = current_workspace_id()
+    clients = clients_for_workspace(ws_id)
+    if len(clients) <= 1:
+        return 0
+
+    active = active_address()
+    addrs = [c["address"] for c in clients]
+    try:
+        i = addrs.index(active)
+    except ValueError:
+        i = 0 if step > 0 else len(addrs) - 1
+
+    target = addrs[(i + step) % len(addrs)]
+    dispatch("focuswindow", f"address:{target}")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
